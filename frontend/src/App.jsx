@@ -5,7 +5,7 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/test')
+    fetch('https://lmsnhom10thu6.onrender.com/api/test')
       .then(res => res.json())
       .then(result => {
         setData(result)
