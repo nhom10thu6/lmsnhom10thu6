@@ -48,64 +48,6 @@ function App() {
       })
   }
 
-  const handleEditClick = (item) => {
-    setEditForm(item)
-    setView('edit')
-  }
-
-  const handleInputChange = (e) => {
-    setEditForm({ ...editForm, [e.target.name]: e.target.value })
-  }
-
-  const handleUpdate = async (id) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/test/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...editForm, phone: Number(editForm.phone) })
-      })
-      if (response.ok) {
-        alert('Cập nhật thành công! ✅')
-        setView('list')
-        fetchData()
-      }
-    } catch (err) {
-      console.error('Lỗi:', err)
-    }
-  }
-
-  if (view === 'edit') {
-    return (
-      <div style={{ padding: 20 }}>
-        <h1>Chỉnh sửa thông tin</h1>
-        <form
-          onSubmit={(e) => { e.preventDefault(); handleUpdate(editForm.id) }}
-          style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '300px' }}
-        >
-          <p>Đang sửa ID: <b>{editForm.id}</b></p>
-
-          <label>Tên:</label>
-          <input name="name" value={editForm.name} onChange={handleInputChange} />
-
-          <label>Email:</label>
-          <input name="email" value={editForm.email} onChange={handleInputChange} />
-
-          <label>Điện thoại:</label>
-          <input name="phone" value={editForm.phone} onChange={handleInputChange} />
-
-          <div style={{ marginTop: '10px' }}>
-            <button type="submit" style={{ background: 'green', color: 'white', marginRight: '10px', padding: '8px' }}>
-              Lưu thay đổi
-            </button>
-            <button type="button" onClick={() => setView('list')} style={{ padding: '8px' }}>
-              Quay lại
-            </button>
-          </div>
-        </form>
-      </div>
-    )
-  }
-
   return (
     <div style={{ padding: 20 }}>
 
