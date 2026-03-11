@@ -25,6 +25,17 @@ app.get('/api/test', async (req, res) => {
     }
 })
 
+app.get('/api/users', async (req, res) => {
+    try {
+        const data = await prisma.test.findMany()
+        res.json(data)
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: 'Server error' })
+    }
+})
+
+
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
