@@ -8,7 +8,8 @@ function App() {
   const [editForm, setEditForm] = useState({ id: '', name: '', email: '', phone: '' })
 
   const fetchData = () => {
-    fetch('http://localhost:5000/api/test') 
+    fetch('https://lmsnhom10thu6.onrender.com/api/test')
+    //fetch('http://localhost:5000/api/test') 
       .then(res => res.json())
       .then(result => {
         setData(result)
