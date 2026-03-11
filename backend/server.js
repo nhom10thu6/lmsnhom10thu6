@@ -52,37 +52,6 @@ app.get('/api/findUser', async (req, res) => {
     }
 })
 
-app.put('/api/test/:id', async (req, res) => {
-    const { id } = req.params;
-    let { name, email, phone } = req.body; 
-
-    try {
-        
-        if (phone) phone = Number(phone);
-
-        const result = await prisma.test.update({
-            where: {
-                id: Number(id)
-            },
-            data: {
-                name: name,
-                email: email,
-                phone: phone
-            }
-        });
-
-        res.json({
-            message: 'Cập nhật thành công! ✅',
-            data: result
-        });
-    } catch (err) {
-        console.error("Lỗi Prisma:", err.meta?.cause || err.message);
-        res.status(400).json({ 
-            error: 'Không thể cập nhật. Kiểm tra xem ID có tồn tại không hoặc dữ liệu phone có phải là số không.' 
-        });
-    }
-});
-
 
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => {
