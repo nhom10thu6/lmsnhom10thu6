@@ -1,57 +1,95 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from "react";
+import AddUser from "./AddUser";
+
+const API_URL = "https://lmsnhom10thu6.onrender.com";
 
 function App() {
-  const [data, setData] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/users`);
+      const data = await res.json();
+      setUsers(data);
+    } catch (err) {
+      console.error(err);
+      alert("Không lấy được dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch('https://lmsnhom10thu6.onrender.com/api/users')
-    // fetch('http://localhost:5000/api/users')
-      .then(res => res.json())
-      .then(result => {
-        setData(result)
-        setLoading(false)
-      })
-      .catch(err => {
-        console.error(err)
-        setLoading(false)
-      })
-  }, [])
+    fetchUsers();
+  }, []);
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Danh sách test</h1>
+    <div style={{ maxWidth: 1000, margin: "auto", padding: 20 }}>
+      
+      <h1 style={{ textAlign: "center" }}>User Management</h1>
 
-      {loading && <p>Đang tải...</p>}
+      {!showForm && (
+        <>
+          <div style={{ marginBottom: 20 }}>
+            <button
+              onClick={() => setShowForm(true)}
+              style={{
+                padding: "10px 20px",
+                background: "#4CAF50",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+              }}
+            >
+              ➕ Thêm User
+            </button>
+          </div>
 
-      {!loading && data.length === 0 && (
-        <p>Không có dữ liệu</p>
+          {loading && <p>Đang tải...</p>}
+
+          {!loading && (
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                boxShadow: "0 0 10px rgba(0,0,0,0.1)",
+              }}
+            >
+              <thead style={{ background: "#f4f4f4" }}>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.id}>
+                    <td>{u.id}</td>
+                    <td>{u.name}</td>
+                    <td>{u.email}</td>
+                    <td>{u.phone}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
       )}
 
-      {!loading && data.length > 0 && (
-        <table border="1" cellPadding="8">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map(item => (
-              <tr key={item.id}>
-                <td>{item.id}</td>
-                <td>{item.name}</td>
-                <td>{item.email}</td>
-                <td>{item.phone}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {showForm && (
+        <AddUser
+          fetchUsers={fetchUsers}
+          closeForm={() => setShowForm(false)}
+        />
       )}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
