@@ -12,7 +12,7 @@ function App() {
   const [searching, setSearching] = useState(false)
 
   const fetchData = () => {
-    fetch('http://localhost:5000/api/test')
+    fetch('https://lmsnhom10thu6.onrender.com/api/test') 
       .then(res => res.json())
       .then(result => {
         setData(result)
