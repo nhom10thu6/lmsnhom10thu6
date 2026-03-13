@@ -74,27 +74,27 @@ app.get('/users/:id', async (req, res) => {
 // /* =======================
 // CREATE USER
 // ======================= */
-// app.post('/api/users', async (req, res) => {
-//   try {
+app.post('/api/users', async (req, res) => {
+  try {
 
-//     const { id, name, email, phone } = req.body
+    const { id, name, email, phone } = req.body
 
-//     const newUser = await prisma.test.create({
-//       data: {
-//         id: parseInt(id),
-//         name,
-//         email,
-//         phone: parseInt(phone)
-//       }
-//     })
+    const newUser = await prisma.test.create({
+      data: {
+        id: parseInt(id),
+        name,
+        email,
+        phone: parseInt(phone)
+      }
+    })
 
-//     res.json(newUser)
+    res.json(newUser)
 
-//   } catch (err) {
-//     console.error(err)
-//     res.status(500).json({ error: 'Server error' })
-//   }
-// })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
 
 // /* =======================
 // UPDATE USER
