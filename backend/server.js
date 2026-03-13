@@ -50,26 +50,26 @@ app.get('/users', async (req, res) => {
 // //         res.status(500).json({ error: 'Server error' })
 // //     }
 // // })
-// app.get('/users/:id', async (req, res) => {
-//   try {
+app.get('/users/:id', async (req, res) => {
+  try {
 
-//     const { id } = req.params
+    const { id } = req.params
 
-//     const user = await prisma.test.findUnique({
-//       where: { id: parseInt(id) }
-//     })
+    const user = await prisma.test.findUnique({
+      where: { id: parseInt(id) }
+    })
 
-//     if (!user) {
-//       return res.status(404).json({ error: 'User not found' })
-//     }
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
 
-//     res.json(user)
+    res.json(user)
 
-//   } catch (err) {
-//     console.error(err)
-//     res.status(500).json({ error: 'Server error' })
-//   }
-// })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
 
 // /* =======================
 // CREATE USER
