@@ -1,7 +1,8 @@
 require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
-const { PrismaClient } = require('./generated/prisma')
+// const { PrismaClient } = require('./generated/prisma')
+const { PrismaClient } = require('@prisma/client')
 
 const app = express()
 const prisma = new PrismaClient()
@@ -11,7 +12,7 @@ app.use(express.json())
 
 // test server
 app.get('/', (req, res) => {
-    res.json({ message: 'API is running 🚀' })
+    res.json({ message: 'API is running 2 🚀' })
 })
 
 /* =======================
