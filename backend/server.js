@@ -127,22 +127,22 @@ app.get('/users/:id', async (req, res) => {
 // /* =======================
 // DELETE USER
 // ======================= */
-// app.delete('/api/users/:id', async (req, res) => {
-//     try {
+app.delete('/api/users/:id', async (req, res) => {
+    try {
 
-//         const { id } = req.params
+        const { id } = req.params
 
-//         await prisma.test.delete({
-//             where: { id: parseInt(id) }
-//         })
+        await prisma.test.delete({
+            where: { id: parseInt(id) }
+        })
 
-//         res.json({ message: 'Deleted successfully' })
+        res.json({ message: 'Deleted successfully' })
 
-//     } catch (err) {
-//         console.error(err)
-//         res.status(500).json({ error: 'Server error' })
-//     }
-// })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: 'Server error' })
+    }
+})
 
 const PORT = process.env.PORT || 5000
 
