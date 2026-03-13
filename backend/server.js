@@ -99,29 +99,29 @@ app.post('/api/users', async (req, res) => {
 // /* =======================
 // UPDATE USER
 // ======================= */
-// app.put('/api/users/:id', async (req, res) => {
-//   try {
+app.put('/api/users/:id', async (req, res) => {
+  try {
 
-//     const { id } = req.params
-//     const { name, email, phone } = req.body
+    const { id } = req.params
+    const { name, email, phone } = req.body
 
-//     const updatedUser = await prisma.test.update({
-//       where: { id: parseInt(id) },
-//       data: {
-//         name,
-//         email,
-//         phone: parseInt(phone)
-//       }
-//     })
+    const updatedUser = await prisma.test.update({
+      where: { id: parseInt(id) },
+      data: {
+        name,
+        email,
+        phone: parseInt(phone)
+      }
+    })
 
-//     res.json(updatedUser)
+    res.json(updatedUser)
 
-//   } catch (err) {
-//     console.error(err)
-//     res.status(500).json({ error: 'Server error' })
-//   }
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Server error' })
+  }
 
-// })
+})
 
 
 // /* =======================
