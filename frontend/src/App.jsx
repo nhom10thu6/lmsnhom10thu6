@@ -1,25 +1,35 @@
-﻿import React, { useEffect, useState } from 'react'
+﻿import React, { useEffect, useState } from "react";
+
+// LOCAL
+// const API_URL = "http://localhost:5000"
+
+// RENDER
+const API_URL = "https://lmsnhom10thu6.onrender.com"
 
 function App() {
+
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState('list')
-  const [editForm, setEditForm] = useState({ id: '', name: '', email: '', phone: '' })
+
+  const [id, setId] = useState('')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+
+  const [editId, setEditId] = useState(null)
 
   const [searchId, setSearchId] = useState('')
   const [foundUser, setFoundUser] = useState(null)
   const [searchError, setSearchError] = useState('')
-  const [searching, setSearching] = useState(false)
 
+  /* =======================
+  GET ALL USERS
+  ======================= */
   const fetchData = () => {
-    fetch('https://lmsnhom10thu6.onrender.com/api/test') 
+    fetch(`${API_URL}/users`)
       .then(res => res.json())
       .then(result => {
         setData(result)
-        setLoading(false)
-      })
-      .catch(err => {
-        console.error(err)
         setLoading(false)
       })
   }
@@ -28,95 +38,242 @@ function App() {
     fetchData()
   }, [])
 
+  /* =======================
+  CREATE USER
+  ======================= */
+  const addUser = () => {
+
+    fetch(`${API_URL}/api/users`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        id: parseInt(id),
+        name,
+        email,
+        phone: parseInt(phone)
+      })
+    })
+      .then(res => res.json())
+      .then(() => {
+        fetchData()
+        clearForm()
+      })
+  }
+
+  /* =======================
+  UPDATE USER
+  ======================= */
+  const updateUser = () => {
+
+    fetch(`${API_URL}/api/users/${editId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name,
+        email,
+        phone: parseInt(phone)
+      })
+    })
+      .then(res => res.json())
+      .then(() => {
+        fetchData()
+        clearForm()
+      })
+  }
+
+  /* =======================
+  DELETE USER
+  ======================= */
+  const deleteUser = (id) => {
+
+    fetch(`${API_URL}/api/users/${id}`, {
+      method: "DELETE"
+    })
+      .then(() => fetchData())
+
+  }
+
+  /* =======================
+  EDIT USER
+  ======================= */
+  const editUser = (user) => {
+
+    setEditId(user.id)
+    setId(user.id)
+    setName(user.name)
+    setEmail(user.email)
+    setPhone(user.phone)
+
+  }
+
+  /* =======================
+  CLEAR FORM
+  ======================= */
+  const clearForm = () => {
+    setEditId(null)
+    setId('')
+    setName('')
+    setEmail('')
+    setPhone('')
+  }
+
+  /* =======================
+  FIND USER
+  ======================= */
   const handleFindUser = () => {
-    if (!searchId) return
-    setSearching(true)
-    setFoundUser(null)
-    setSearchError('')
-    fetch(`http://localhost:5000/api/findUser?id=${searchId}`)
+
+    // fetch(`${API_URL}/api/findUser?id=${searchId}`)
+    fetch(`${API_URL}/users/${searchId}`)
       .then(res => {
-        if (!res.ok) return res.json().then(e => { throw new Error(e.error) })
+        if (!res.ok) throw new Error("User not found")
         return res.json()
       })
       .then(user => {
         setFoundUser(user)
-        setSearching(false)
+        setSearchError('')
       })
       .catch(err => {
         setSearchError(err.message)
-        setSearching(false)
+        setFoundUser(null)
       })
+
   }
 
   return (
+
     <div style={{ padding: 20 }}>
 
-      <h2>Tìm user theo ID</h2>
-      <div style={{ marginBottom: 16 }}>
-        <input
-          type="number"
-          placeholder="Nhập ID"
-          value={searchId}
-          onChange={e => setSearchId(e.target.value)}
-          style={{ padding: '6px 10px', marginRight: 8 }}
-        />
-        <button onClick={handleFindUser} disabled={searching} style={{ padding: '6px 14px' }}>
-          {searching ? 'Đang tìm...' : 'Tìm kiếm'}
-        </button>
-      </div>
+      <h1>CRUD User</h1>
 
-      {searchError && <p style={{ color: 'red' }}>Lỗi: {searchError}</p>}
+      {/* =======================
+ADD / UPDATE USER
+======================= */}
+
+      <h3>{editId ? "Update User" : "Add User"}</h3>
+
+      <input
+        placeholder="Id"
+        value={id}
+        disabled={editId !== null}
+        onChange={(e) => setId(e.target.value)}
+      />
+
+      <input
+        placeholder="Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+
+      <input
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+
+      <input
+        placeholder="Phone"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+      />
+
+      {editId !== null ? (
+        <button onClick={updateUser}>Update</button>
+      ) : (
+        <button onClick={addUser}>Add</button>
+      )}
+
+      {editId && (
+        <button onClick={clearForm} style={{ marginLeft: 10 }}>
+          Cancel
+        </button>
+      )}
+
+      {/* =======================
+SEARCH USER
+======================= */}
+
+      <h3>Tìm user theo ID</h3>
+
+      <input
+        placeholder="Nhập ID"
+        value={searchId}
+        onChange={(e) => setSearchId(e.target.value)}
+      />
+
+      <button onClick={handleFindUser}>Search</button>
+
+      {searchError && <p style={{ color: "red" }}>{searchError}</p>}
 
       {foundUser && (
-        <table border="1" cellPadding="8" style={{ marginBottom: 24 }}>
-          <thead>
-            <tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>{foundUser.id}</td>
-              <td>{foundUser.name}</td>
-              <td>{foundUser.email}</td>
-              <td>{foundUser.phone}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div>
+          <p>ID: {foundUser.id}</p>
+          <p>Name: {foundUser.name}</p>
+          <p>Email: {foundUser.email}</p>
+          <p>Phone: {foundUser.phone}</p>
+        </div>
       )}
 
-      <h1>Danh sách test</h1>
+      {/* =======================
+USER LIST
+======================= */}
 
-      {loading && <p>Đang tải...</p>}
+      <h3>Danh sách User</h3>
 
-      {!loading && data.length === 0 && <p>Không có dữ liệu</p>}
+      {loading && <p>Loading...</p>}
 
-      {!loading && data.length > 0 && (
-        <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Hành động</th>
+      <table border="1">
+
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          {data.map(user => (
+
+            <tr key={user.id}>
+              <td>{user.id}</td>
+              <td>{user.name}</td>
+              <td>{user.email}</td>
+              <td>{user.phone}</td>
+
+              <td>
+
+                <button onClick={() => editUser(user)}>
+                  Edit
+                </button>
+
+                <button
+                  onClick={() => deleteUser(user.id)}
+                  style={{ marginLeft: 5 }}
+                >
+                  Delete
+                </button>
+
+              </td>
+
             </tr>
-          </thead>
-          <tbody>
-            {data.map(item => (
-              <tr key={item.id}>
-                <td>{item.id}</td>
-                <td>{item.name}</td>
-                <td>{item.email}</td>
-                <td>{item.phone}</td>
-                <td>
-                  <button onClick={() => handleEditClick(item)}>Sửa</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+
+          ))}
+
+        </tbody>
+
+      </table>
+
     </div>
+
   )
+
 }
 
 export default App
