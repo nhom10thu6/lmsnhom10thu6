@@ -1,4 +1,4 @@
-Nhiệm vụ: Liêm + Khoa: FE giảng viên + học viên + login/đăng ký + pp Hiền + Bình: BE giảng viên Hào: BE Học viên Danh: FE + BE học viên + BE login/đăng ký
+Nhiệm vụ: Liêm + Khoa: FE admin + giảng viên + học viên + login/đăng ký + pp Hiền + Bình: BE giảng viên Hào: BE Học viên Danh:BE admin + BE login/đăng ký
 
 Lưu ý: Xong tính năng nào cập nhật bên dưới file Readme
 

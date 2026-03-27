@@ -8,12 +8,14 @@ const prisma = new PrismaClient()
 
 const auth = require('./routes/auth')
 const adminUsers = require('./routes/admin/users')
+const adminClassrooms = require('./routes/admin/classrooms')
 
 app.use(cors())
 app.use(express.json())
 
 app.use('/auth', auth)
 app.use('/admin/users', adminUsers)
+app.use('/admin/classrooms', adminClassrooms)
 
 // test server
 app.get('/', (req, res) => {
