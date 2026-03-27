@@ -1,77 +1,160 @@
+const express = require('express')
+const router = express.Router()
 const { PrismaClient } = require('../../generated/prisma')
 const prisma = new PrismaClient()
+const {checkAdmin} = require('../middleware/middleware')
 
-const checkRole = (role) => {
-    return async (req, res, next) => {
-        try {
-            const userId = req.headers["x-user-id"]
-
-            console.log(`Middleware check ${role}:`, {
-                method: req.method,
-                path: req.path,
-                headerId: userId
-            })
-
-            if (!userId) {
-                return res.status(401).json({
-                    success: false,
-                    error: "Thiếu thông tin người dùng"
-                })
-            }
-
-            const idNguoiDung = parseInt(userId)
-
-            if (isNaN(idNguoiDung)) {
-                return res.status(400).json({
-                    success: false,
-                    error: "ID người dùng không hợp lệ"
-                })
-            }
-
-            const user = await prisma.nguoidung.findUnique({
-                where: { idNguoiDung }
-            })
-
-            if (!user) {
-                return res.status(401).json({
-                    success: false,
-                    error: "Người dùng không tồn tại"
-                })
-            }
-
-            if (user.vaiTro !== role) {
-                return res.status(403).json({
-                    success: false,
-                    error: `Chỉ ${role} mới có quyền`
-                })
-            }
-
-            req.user = user
-
-            console.log("User authenticated:", {
-                id: user.idNguoiDung,
-                hoTen: user.hoTen,
-                vaiTro: user.vaiTro
-            })
-
-            next()
-        } catch (error) {
-            console.error(`Lỗi check ${role}:`, error)
-            res.status(500).json({
-                success: false,
-                error: "Lỗi server"
-            })
+router.get("/", checkAdmin ,async (req, res) => {
+    try {
+        const { role } = req.query;
+        const where = {};
+        if (role) {
+            where.vaiTro = role;
         }
+        const dsNguoiDung = await prisma.nguoidung.findMany({
+            where,
+            include: {},
+            orderBy: {
+                idNguoiDung: 'asc'
+            }
+        });
+        res.json(dsNguoiDung);
+    } catch (error) {
+        console.error("Lỗi khi lấy thông tin người dùng:", error);
+        res.status(500).json({ error: "Không thể lấy thông tin người dùng" });
     }
-}
+});
 
-// Tạo middleware cụ thể
-const checkAdmin = checkRole("admin")
-const checkGiangVien = checkRole("giangvien")
-const checkHocVien = checkRole("hocvien")
+router.get("/:idNguoiDung", checkAdmin,async (req, res) => {
+    try {
+        const nguoiDungId = parseInt(req.params.idNguoiDung);
 
-module.exports = {
-    checkAdmin,
-    checkGiangVien,
-    checkHocVien
-}
+        if (isNaN(nguoiDungId)) {
+            return res.status(400).json({ error: "ID người dùng không hợp lệ" });
+        }
+
+        const nguoiDung = await prisma.nguoidung.findUnique({
+            where: {
+                idNguoiDung: nguoiDungId
+            }
+        });
+
+        if (!nguoiDung) {
+            return res.status(404).json({ error: "Không tìm thấy người dùng" });
+        }
+
+        res.json(nguoiDung);
+    } catch (error) {
+        console.error("Lỗi khi lấy thông tin người dùng:", error);
+        res.status(500).json({ error: "Không thể lấy thông tin người dùng" });
+    }
+});
+
+router.post("/", checkAdmin, async (req, res) => {
+    try {
+        const { hoTen, taiKhoan, matKhau, vaiTro } = req.body;
+
+        if (!hoTen || !taiKhoan || !matKhau) {
+            return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
+        }
+
+        // check trùng
+        const existing = await prisma.nguoidung.findUnique({
+            where: { taiKhoan }
+        });
+
+        if (existing) {
+            return res.status(409).json({ error: "Tài khoản đã tồn tại" });
+        }
+
+        // validate role
+        const vaiTroMoi = ["admin", "giangvien", "hocvien"].includes(vaiTro)
+            ? vaiTro
+            : "hocvien";
+
+        const nguoiDungMoi = await prisma.nguoidung.create({
+            data: {
+                hoTen,
+                taiKhoan,
+                matKhau,
+                vaiTro: vaiTroMoi
+            }
+        });
+
+        // ẩn password
+        const { matKhau: _, ...userSafe } = nguoiDungMoi;
+
+        res.status(201).json(userSafe);
+
+    } catch (error) {
+        res.status(500).json({ error: "Không thể tạo người dùng" });
+    }
+});
+
+router.delete("/:idNguoiDung", checkAdmin,async (req, res) => {
+    try {
+        const idNguoiDung = parseInt(req.params.idNguoiDung);
+        if (isNaN(idNguoiDung)) {
+            return res.status(400).json({ error: "ID người dùng không hợp lệ" });
+        }
+
+        const user = await prisma.nguoidung.findUnique({
+            where: { idNguoiDung }
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: "Người dùng không tồn tại" });
+        }
+        if (user.vaiTro === "giangvien") {
+            return res.status(403).json({
+                error: "Không được xóa giảng viên"
+            });
+        }
+        if (user.vaiTro === "admin") {
+            return res.status(403).json({
+                error: "Không được xóa admin"
+            });
+        }
+        const hasData =
+            await prisma.dangky_khoahoc.findFirst({ where: { idNguoiDung } }) ||
+            await prisma.progress.findFirst({ where: { idNguoiDung } }) ||
+            await prisma.quiz_results.findFirst({ where: { idNguoiDung } }) ||
+            await prisma.certificates.findFirst({ where: { idNguoiDung } });
+
+        if (hasData) {
+            return res.status(400).json({
+                error: "Không thể xóa học viên đã phát sinh dữ liệu học tập"
+            });
+        }
+        await prisma.nguoidung.delete({
+            where: { idNguoiDung }
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Lỗi khi xóa người dùng:", error);
+        res.status(500).json({ error: "Lỗi server" });
+    }
+});
+
+router.put("/:idNguoiDung",checkAdmin ,async (req, res) => {
+    try {
+        const nguoiDungId = parseInt(req.params.idNguoiDung);
+        const { hoTen, taiKhoan, matKhau, vaiTro } = req.body;
+        const updateNguoiDung = await prisma.nguoidung.update({
+            where: { idNguoiDung: nguoiDungId },
+            data: {
+                hoTen,
+                taiKhoan,
+                matKhau,
+                vaiTro
+            }
+        });
+        res.json(updateNguoiDung);
+    }
+    catch (error) {
+        console.error("Lỗi khi cập nhật người dùng:", error);
+        res.status(500).json({ error: "Không thể cập nhật người dùng" });
+    }
+});
+
+module.exports = router
