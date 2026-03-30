@@ -4,4 +4,5 @@ Lưu ý: Xong tính năng nào cập nhật bên dưới file Readme
 
 Liêm + Khoa:  Hào: Danh: Đã xong BE login/đăng ký + BE admin user/classroom
 Hiền + Bình: api tạo bài kiểm tra + api trả điểm học viên cho giảng viên
+
 cập nhật lại link db trong .env: DATABASE_URL="postgresql://lmsdb_sh9c_user:wMOBA29JFW5PJNB5u8vAVw1RpP2DuOE1@dpg-d72him0ule4c73e5ihd0-a.singapore-postgres.render.com/lmsdb_sh9c"
