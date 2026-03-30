@@ -11,14 +11,12 @@ const adminUsers = require('./routes/admin/users')
 const adminClassrooms = require('./routes/admin/classrooms')
 
 const giangVienQuiz = require('./routes/giangvien/quiz')
-const bangdiem = require('./routes/giangvien/quiz')
 
 app.use(cors())
 app.use(express.json())
 
 app.use('/auth', auth)
 app.use('/giang-vien/quiz', giangVienQuiz)
-app.use('/giang-vien/bang-diem', bangdiem)
 app.use('/admin/users', adminUsers)
 app.use('/admin/classrooms', adminClassrooms)
 
