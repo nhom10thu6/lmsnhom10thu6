@@ -29,7 +29,7 @@ app.use('/giang-vien/quiz', giangVienQuiz)
 app.use('/admin/users', adminUsers)
 app.use('/admin/classrooms', adminClassrooms)
 app.use('/giang-vien/bai-hoc', giangVienBaiHoc)
-app.use('/giang-vien/chung-chi', giangVienCert)
+app.use('/giang-vien/certificate', giangVienCert)
 app.use('/giang-vien/khoa-hoc', giangVienKhoaHoc)
 // test server
 app.get('/', (req, res) => {
