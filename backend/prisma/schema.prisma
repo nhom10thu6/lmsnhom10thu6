@@ -16,33 +16,30 @@ model test {
 }
 
 model khoahoc {
-  idKhoaHoc   Int       @id @default(autoincrement())
-  tenKhoaHoc  String
-  moTa        String?
-  danhMuc     String?
-  idGiangVien Int?
-  gia         Decimal?  @default(0.00)
-  ngayTao     DateTime? @default(now())
-
+  idKhoaHoc         Int                 @id @default(autoincrement())
+  tenKhoaHoc        String
+  moTa              String?
+  danhMuc           String?
+  idGiangVien       Int?
+  gia               Decimal?            @default(0.00)
+  ngayTao           DateTime?           @default(now())
   baihoc            baihoc[]
   certificates      certificates[]
   dangky_khoahoc    dangky_khoahoc[]
   instructor_payout instructor_payout[]
+  nguoidung         nguoidung?          @relation(fields: [idGiangVien], references: [idNguoiDung])
   progress          progress[]
   quizzes           quizzes[]
-
-  nguoidung nguoidung? @relation(fields: [idGiangVien], references: [idNguoiDung])
 
   @@index([idGiangVien])
 }
 
 model nguoidung {
-  idNguoiDung Int    @id @default(autoincrement())
-  hoTen       String
-  taiKhoan    String @unique
-  matKhau     String
-  vaiTro      nguoidung_vaiTro? @default(hocvien)
-
+  idNguoiDung       Int                 @id @default(autoincrement())
+  hoTen             String
+  taiKhoan          String              @unique
+  matKhau           String
+  vaiTro            nguoidung_vaiTro?   @default(hocvien)
   certificates      certificates[]
   dangky_khoahoc    dangky_khoahoc[]
   instructor_payout instructor_payout[]
@@ -52,15 +49,14 @@ model nguoidung {
 }
 
 model baihoc {
-  idBaiHoc   Int    @id @default(autoincrement())
+  idBaiHoc   Int        @id @default(autoincrement())
   idKhoaHoc  Int
   tenBaiHoc  String
   videoUrl   String?
   taiLieuUrl String?
   thuTu      Int?
-
-  khoahoc  khoahoc @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
-  progress progress[]
+  khoahoc    khoahoc    @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
+  progress   progress[]
 
   @@index([idKhoaHoc])
 }
@@ -70,40 +66,37 @@ model certificates {
   idNguoiDung   Int
   idKhoaHoc     Int?
   ngayCap       DateTime? @default(now())
-
-  khoahoc   khoahoc?  @relation(fields: [idKhoaHoc], references: [idKhoaHoc])
-  nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung])
+  khoahoc       khoahoc?  @relation(fields: [idKhoaHoc], references: [idKhoaHoc])
+  nguoidung     nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung])
 
   @@index([idNguoiDung])
   @@index([idKhoaHoc])
 }
 
 model instructor_payout {
-  idPayout    Int       @id @default(autoincrement())
+  idPayout    Int                          @id @default(autoincrement())
   idGiangVien Int
   idKhoaHoc   Int
   soTien      Decimal?
   trangThai   instructor_payout_trangThai? @default(cho_thanh_toan)
-  ngayTao     DateTime? @default(now())
-
-  nguoidung nguoidung @relation(fields: [idGiangVien], references: [idNguoiDung])
-  khoahoc   khoahoc   @relation(fields: [idKhoaHoc], references: [idKhoaHoc])
+  ngayTao     DateTime?                    @default(now())
+  nguoidung   nguoidung                    @relation(fields: [idGiangVien], references: [idNguoiDung])
+  khoahoc     khoahoc                      @relation(fields: [idKhoaHoc], references: [idKhoaHoc])
 
   @@index([idGiangVien])
   @@index([idKhoaHoc])
 }
 
 model progress {
-  idProgress  Int    @id @default(autoincrement())
+  idProgress  Int                 @id @default(autoincrement())
   idNguoiDung Int
   idKhoaHoc   Int
   idBaiHoc    Int
   trangThai   progress_trangThai? @default(chua_hoc)
-  thoiGianHoc Int? @default(0)
-
-  baihoc    baihoc    @relation(fields: [idBaiHoc], references: [idBaiHoc], onDelete: Cascade)
-  khoahoc   khoahoc   @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
-  nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
+  thoiGianHoc Int?                @default(0)
+  baihoc      baihoc              @relation(fields: [idBaiHoc], references: [idBaiHoc], onDelete: Cascade)
+  khoahoc     khoahoc             @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
+  nguoidung   nguoidung           @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
 
   @@index([idNguoiDung])
   @@index([idKhoaHoc])
@@ -111,26 +104,24 @@ model progress {
 }
 
 model quizzes {
-  idQuiz         Int    @id @default(autoincrement())
+  idQuiz         Int              @id @default(autoincrement())
   idKhoaHoc      Int
   tenQuiz        String
   thoiGianLamBai Int?
-
-  khoahoc        khoahoc          @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
   quiz_questions quiz_questions[]
   quiz_results   quiz_results[]
+  khoahoc        khoahoc          @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
 
   @@index([idKhoaHoc])
 }
 
 model quiz_questions {
-  idCauHoi   Int     @id @default(autoincrement())
+  idCauHoi   Int      @id @default(autoincrement())
   idQuiz     Int
   cauHoi     String
   dapAnDung  String?
   diemCauHoi Decimal? @default(1.00)
-
-  quizzes quizzes @relation(fields: [idQuiz], references: [idQuiz], onDelete: Cascade)
+  quizzes    quizzes  @relation(fields: [idQuiz], references: [idQuiz], onDelete: Cascade)
 
   @@index([idQuiz])
 }
@@ -142,9 +133,8 @@ model quiz_results {
   diemSo         Decimal?
   thoiGianLamBai Int?
   ngayLamBai     DateTime? @default(now())
-
-  nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
-  quizzes   quizzes?  @relation(fields: [idQuiz], references: [idQuiz])
+  nguoidung      nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
+  quizzes        quizzes?  @relation(fields: [idQuiz], references: [idQuiz])
 
   @@index([idNguoiDung])
   @@index([idQuiz])
@@ -155,9 +145,8 @@ model dangky_khoahoc {
   idNguoiDung Int
   idKhoaHoc   Int
   ngayDangKy  DateTime? @default(now())
-
-  nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung])
-  khoahoc   khoahoc   @relation(fields: [idKhoaHoc], references: [idKhoaHoc])
+  khoahoc     khoahoc   @relation(fields: [idKhoaHoc], references: [idKhoaHoc])
+  nguoidung   nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung])
 
   @@unique([idNguoiDung, idKhoaHoc])
 }

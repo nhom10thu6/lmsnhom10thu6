@@ -9,7 +9,7 @@ const prisma = new PrismaClient()
 const auth = require('./routes/auth')
 const adminUsers = require('./routes/admin/users')
 const adminClassrooms = require('./routes/admin/classrooms')
-
+const hocvien= require('./routes/hocvien/hocvien')
 const giangVienQuiz = require('./routes/giangvien/quiz')
 
 const giangVienBaiHoc = require('./routes/giangvien/baihoc')
@@ -23,7 +23,7 @@ const giangVienKhoaHoc = require('./routes/giangvien/khoahoc')
 
 app.use(cors())
 app.use(express.json())
-
+app.use('/hoc-vien', hocvien);
 app.use('/auth', auth)
 app.use('/giang-vien/quiz', giangVienQuiz)
 app.use('/admin/users', adminUsers)
