@@ -10,13 +10,27 @@ const auth = require('./routes/auth')
 const adminUsers = require('./routes/admin/users')
 const adminClassrooms = require('./routes/admin/classrooms')
 
+const giangVienQuiz = require('./routes/giangvien/quiz')
+
+const giangVienBaiHoc = require('./routes/giangvien/baihoc')
+
+const giangVienCert = require('./routes/giangvien/certificate')
+
+const giangVienKhoaHoc = require('./routes/giangvien/khoahoc')
+
+
+
+
 app.use(cors())
 app.use(express.json())
 
 app.use('/auth', auth)
+app.use('/giang-vien/quiz', giangVienQuiz)
 app.use('/admin/users', adminUsers)
 app.use('/admin/classrooms', adminClassrooms)
-
+app.use('/giang-vien/bai-hoc', giangVienBaiHoc)
+app.use('/giang-vien/chung-chi', giangVienCert)
+app.use('/giang-vien/khoa-hoc', giangVienKhoaHoc)
 // test server
 app.get('/', (req, res) => {
     res.json({ message: 'API is running 2 🚀' })

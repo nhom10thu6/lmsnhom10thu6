@@ -6,4 +6,6 @@ Liêm + Khoa:  Hào: Danh: Đã xong BE login/đăng ký + BE admin user/classro
 
 Hiền + Bình: api tạo bài kiểm tra + api trả điểm học viên cho giảng viên(CHƯA TEST ) + api xóa bài kiểm tra + api sửa bài kiểm tra
 
+Hiền đã làm xong: API tạo bài học(Tạo, sửa, xóa(Đã test api), Xem chưa test API, ceritificate chưa test API)
+
 cập nhật lại link db trong .env: DATABASE_URL="postgresql://lmsdb_sh9c_user:wMOBA29JFW5PJNB5u8vAVw1RpP2DuOE1@dpg-d72him0ule4c73e5ihd0-a.singapore-postgres.render.com/lmsdb_sh9c"
