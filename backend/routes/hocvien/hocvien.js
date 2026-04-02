@@ -730,4 +730,152 @@ router.get("/certificate/:idKhoaHoc", checkHocVien, async (req, res) => {
     }
 });
 
+// ===== API xem danh sách khóa học =====
+router.get("/khoahoc", checkHocVien, async (req, res) => {
+    try {
+        const idNguoiDung = req.user.idNguoiDung;
+        const dsKhoaHoc = await prisma.khoahoc.findMany({
+            include: {
+                nguoidung: {
+                    select: { hoTen: true }
+                }
+            }
+        });
+
+        const dangKy = await prisma.dangky_khoahoc.findMany({
+            where: { idNguoiDung },
+            select: { idKhoaHoc: true }
+        });
+        const dangKySet = new Set(dangKy.map(item => item.idKhoaHoc));
+
+        const result = dsKhoaHoc.map(kh => ({
+            idKhoaHoc: kh.idKhoaHoc,
+            tenKhoaHoc: kh.tenKhoaHoc,
+            moTa: kh.moTa,
+            danhMuc: kh.danhMuc,
+            gia: kh.gia,
+            idGiangVien: kh.idGiangVien,
+            giangVien: kh.nguoidung?.hoTen || null,
+            daDangKy: dangKySet.has(kh.idKhoaHoc)
+        }));
+
+        res.json({ success: true, khoaHoc: result });
+    } catch (err) {
+        console.error("Lỗi lấy danh sách khóa học:", err);
+        res.status(500).json({ error: "Lỗi server" });
+    }
+});
+
+// ===== API xem khóa học đã đăng ký =====
+router.get("/khoahoc/dang-ky", checkHocVien, async (req, res) => {
+    try {
+        const idNguoiDung = req.user.idNguoiDung;
+        const dsDangKy = await prisma.dangky_khoahoc.findMany({
+            where: { idNguoiDung },
+            include: { khoahoc: true }
+        });
+
+        const result = dsDangKy.map(dk => ({
+            idKhoaHoc: dk.khoahoc.idKhoaHoc,
+            tenKhoaHoc: dk.khoahoc.tenKhoaHoc,
+            moTa: dk.khoahoc.moTa,
+            gia: dk.khoahoc.gia,
+            ngayDangKy: dk.ngayDangKy
+        }));
+
+        res.json({ success: true, khoaHocDangKy: result });
+    } catch (err) {
+        console.error("Lỗi lấy khóa học đăng ký:", err);
+        res.status(500).json({ error: "Lỗi server" });
+    }
+});
+
+// ===== API đăng ký khóa học =====
+router.post("/khoahoc/dang-ky", checkHocVien, async (req, res) => {
+    try {
+        const idNguoiDung = req.user.idNguoiDung;
+        const { idKhoaHoc } = req.body;
+
+        if (!idKhoaHoc || isNaN(parseInt(idKhoaHoc))) {
+            return res.status(400).json({ error: "idKhoaHoc không hợp lệ" });
+        }
+
+        const khoaHoc = await prisma.khoahoc.findUnique({ where: { idKhoaHoc: parseInt(idKhoaHoc) } });
+        if (!khoaHoc) {
+            return res.status(404).json({ error: "Khóa học không tồn tại" });
+        }
+
+        const existed = await prisma.dangky_khoahoc.findUnique({
+            where: { idNguoiDung_idKhoaHoc: { idNguoiDung, idKhoaHoc: parseInt(idKhoaHoc) } }
+        });
+
+        if (existed) {
+            return res.status(400).json({ success: false, message: "Bạn đã đăng ký khóa học này" });
+        }
+
+        const dangKy = await prisma.dangky_khoahoc.create({
+            data: {
+                idNguoiDung,
+                idKhoaHoc: parseInt(idKhoaHoc)
+            }
+        });
+
+        res.json({ success: true, message: "Đăng ký khóa học thành công", dangKy });
+    } catch (err) {
+        console.error("Lỗi đăng ký khóa học:", err);
+        res.status(500).json({ error: "Lỗi server" });
+    }
+});
+
+// ===== API xem chứng chỉ =====
+router.get("/certificate", checkHocVien, async (req, res) => {
+    try {
+        const idNguoiDung = req.user.idNguoiDung;
+        const certificates = await prisma.certificates.findMany({
+            where: { idNguoiDung },
+            include: { khoahoc: true }
+        });
+
+        res.json({ success: true, certificates });
+    } catch (err) {
+        console.error("Lỗi lấy chứng chỉ:", err);
+        res.status(500).json({ error: "Lỗi server" });
+    }
+});
+
+// ===== API in chứng chỉ =====
+router.get("/certificate/:idKhoaHoc/print", checkHocVien, async (req, res) => {
+    try {
+        const idNguoiDung = req.user.idNguoiDung;
+        const idKhoaHoc = parseInt(req.params.idKhoaHoc);
+
+        if (isNaN(idKhoaHoc)) {
+            return res.status(400).json({ error: "ID khóa học không hợp lệ" });
+        }
+
+        const cert = await prisma.certificates.findFirst({
+            where: { idNguoiDung, idKhoaHoc },
+            include: { khoahoc: true, nguoidung: true }
+        });
+
+        if (!cert) {
+            return res.status(404).json({ error: "Chứng chỉ chưa có" });
+        }
+
+        // Trả dữ liệu dạng JSON để frontend xây dựng template in
+        res.json({
+            success: true,
+            printData: {
+                hoTen: cert.nguoidung.hoTen,
+                tenKhoaHoc: cert.khoahoc.tenKhoaHoc,
+                ngayCap: cert.ngayCap,
+                idCertificate: cert.idCertificate
+            }
+        });
+    } catch (err) {
+        console.error("Lỗi in chứng chỉ:", err);
+        res.status(500).json({ error: "Lỗi server" });
+    }
+});
+
 module.exports = router;
