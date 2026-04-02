@@ -66,46 +66,7 @@ const checkHocVien = async (req, res, next) => {
     }
 };
 
-// router.get("/khoahoc/:idKhoaHoc", checkHocVien, async (req, res) => {
-//     try {
-//         const idNguoiDung = req.user.idNguoiDung;
-//         const idKhoaHoc = parseInt(req.params.idKhoaHoc);
-//         if (isNaN(idKhoaHoc)) {
-//             return res.status(400).json({ error: "ID khóa học không hợp lệ" });
-//         }
-//         const dangKy = await prisma.dangky_khoahoc.findFirst({
-//             where: {
-//                 idNguoiDung,
-//                 idKhoaHoc
-//             }
-//         })
-//         if (!dangKy) {
-//             return res.status(403).json({
-//                 error: "Bạn chưa đăng ký khóa học này"
-//             });
-//         }
-//         const khoaHoc = await prisma.khoahoc.findUnique({
-//             where: { idKhoaHoc },
-//             include: {
-//                 baihoc: {
-//                     orderBy: { thuTu: "asc" }
-//                 },
-//                 quizzes: true
-//             }
-//         });
-//         if (!khoaHoc) {
-//             return res.status(404).json({ error: "Không tìm thấy khóa học" });
-//         }
-//         res.json({
-//             success: true,
-//             khoaHoc
-//         });
-//     }
-//     catch (error) {
-//         console.error("Lỗi xem chi tiết khóa học:", error);
-//         res.status(500).json({ error: "Lỗi server" });
-//     }
-// });
+ 
 
 router.get("/khoahoc/:idKhoaHoc", checkHocVien, async (req, res) => {
   try {
@@ -189,79 +150,6 @@ router.get("/khoahoc/:idKhoaHoc", checkHocVien, async (req, res) => {
     res.status(500).json({ error: "Lỗi server" });
   }
 });
-
-
-// router.get("/baihoc/:idBaiHoc", checkHocVien, async (req, res) => {
-//     try {
-//         const idBaiHoc = parseInt(req.params.idBaiHoc);
-//         const idNguoiDung = req.user.idNguoiDung;
-//         if (isNaN(idBaiHoc)) {
-//             return res.status(400).json({ error: "ID bài học không hợp lệ" });
-//         }
-//         const baiHoc = await prisma.baihoc.findUnique({
-//             where: { idBaiHoc },
-//             include: {
-//                 khoahoc: {
-//                     select: { idKhoaHoc: true }
-//                 }
-//             }
-//         });
-
-//         if (!baiHoc) {
-//             return res.status(404).json({ error: "Không tìm thấy bài học" });
-//         }
-//         const dangKy = await prisma.dangky_khoahoc.findFirst({
-//             where: {
-//                 idNguoiDung,
-//                 idKhoaHoc: baiHoc.idKhoaHoc
-//             }
-//         });
-//         if (!dangKy) {
-//             return res.status(403).json({ error: "Bạn chưa đăng ký khóa học này" });
-//         }
-//         let progress = await prisma.progress.findFirst({
-//             where: {
-//                 idNguoiDung,
-//                 idKhoaHoc: baiHoc.idKhoaHoc,
-//                 idBaiHoc
-//             }
-//         });
-//         let loaiBaiHoc = "unknown";
-
-//         if (baiHoc.videoUrl) {
-//             loaiBaiHoc = "video";
-//         } else if (baiHoc.taiLieuUrl) {
-//             const ext = baiHoc.taiLieuUrl.split(".").pop().toLowerCase();
-
-//             if (ext === "pdf") loaiBaiHoc = "pdf";
-//             else if (ext === "doc" || ext === "docx") loaiBaiHoc = "word";
-//             else if (ext === "ppt" || ext === "pptx") loaiBaiHoc = "ppt";
-//             else loaiBaiHoc = "tailieu";
-//         }
-
-//         if (!progress) {
-//             progress = await prisma.progress.create({
-//                 data: {
-//                     idNguoiDung,
-//                     idKhoaHoc: baiHoc.idKhoaHoc,
-//                     idBaiHoc,
-//                     trangThai: "chua_hoc",
-//                     thoiGianHoc: 0
-//                 }
-//             });
-//         }
-
-//         res.json({
-//             success: true,
-//             baiHoc,
-//             loaiBaiHoc,
-//             progress
-//         });
-//     } catch (error) {
-//         console.error("Lỗi học bài:", error);
-//         res.status(500).json({ error: "Lỗi server" });
-//     }
-// });
 router.get("/baihoc/:idBaiHoc", checkHocVien, async (req, res) => {
     try {
         const idBaiHoc = parseInt(req.params.idBaiHoc);
