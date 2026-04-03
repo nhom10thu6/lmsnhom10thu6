@@ -5,8 +5,10 @@ const prisma = new PrismaClient()
 
 router.post("/login", async (req, res) => {
     try {
-        const { taiKhoan, matKhau } = req.body
+        let { taiKhoan, matKhau } = req.body
 
+        taiKhoan = taiKhoan ? taiKhoan.trim() : undefined
+        matKhau = matKhau ? matKhau.trim() : undefined
         if (!taiKhoan || !matKhau) {
             return res.status(400).json({
                 success: false,
@@ -65,12 +67,22 @@ router.post("/login", async (req, res) => {
 
 router.post("/dangky", async (req, res) => {
     try {
-        const { hoTen, taiKhoan, matKhau, vaiTro } = req.body
-
+        let { hoTen, taiKhoan, matKhau, vaiTro } = req.body
+        hoTen = hoTen ? hoTen.trim().replace(/\s+/g, ' ') : undefined
+        taiKhoan = taiKhoan ? taiKhoan.trim() : undefined
+        matKhau = matKhau ? matKhau.trim() : undefined
+        const nameRegex = /^[a-zA-ZÀ-ỹ\s]+$/
         if (!hoTen || !taiKhoan || !matKhau) {
             return res.status(400).json({
                 success: false,
                 message: "Vui lòng điền đầy đủ thông tin"
+            })
+        }
+
+        if(!nameRegex.test(hoTen)) {
+            return res.status(400).json({
+                success: false,
+                message: "Họ tên chỉ được chứa chữ cái và khoảng trắng"
             })
         }
 

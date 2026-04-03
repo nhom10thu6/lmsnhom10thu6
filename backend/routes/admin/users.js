@@ -25,6 +25,26 @@ router.get("/", checkAdmin ,async (req, res) => {
     }
 });
 
+router.get('/search', checkAdmin, async (req, res) => {
+  try {
+    const { taiKhoan } = req.query
+
+    const users = await prisma.nguoidung.findMany({
+      where: taiKhoan
+        ? {
+            taiKhoan: {
+              contains: taiKhoan,
+            },
+          }
+        : {},
+    })
+
+    res.json(users)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 router.get("/:idNguoiDung", checkAdmin,async (req, res) => {
     try {
         const nguoiDungId = parseInt(req.params.idNguoiDung);
@@ -52,13 +72,19 @@ router.get("/:idNguoiDung", checkAdmin,async (req, res) => {
 
 router.post("/", checkAdmin, async (req, res) => {
     try {
-        const { hoTen, taiKhoan, matKhau, vaiTro } = req.body;
+        let { hoTen, taiKhoan, matKhau, vaiTro } = req.body;
+        hoTen = hoTen ? hoTen.trim().replace(/\s+/g, ' ') : undefined
+        taiKhoan = taiKhoan ? taiKhoan.trim() : undefined
+        matKhau = matKhau ? matKhau.trim() : undefined
+        const nameRegex = /^[a-zA-ZÀ-ỹ\s]+$/
 
         if (!hoTen || !taiKhoan || !matKhau) {
             return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
         }
 
-        // check trùng
+        if (!nameRegex.test(hoTen)) {
+            return res.status(400).json({ error: "Họ tên chỉ được chứa chữ cái và khoảng trắng" });
+        }
         const existing = await prisma.nguoidung.findUnique({
             where: { taiKhoan }
         });
@@ -67,7 +93,6 @@ router.post("/", checkAdmin, async (req, res) => {
             return res.status(409).json({ error: "Tài khoản đã tồn tại" });
         }
 
-        // validate role
         const vaiTroMoi = ["admin", "giangvien", "hocvien"].includes(vaiTro)
             ? vaiTro
             : "hocvien";
@@ -139,7 +164,14 @@ router.delete("/:idNguoiDung", checkAdmin,async (req, res) => {
 router.put("/:idNguoiDung",checkAdmin ,async (req, res) => {
     try {
         const nguoiDungId = parseInt(req.params.idNguoiDung);
-        const { hoTen, taiKhoan, matKhau, vaiTro } = req.body;
+        let { hoTen, taiKhoan, matKhau, vaiTro } = req.body;
+        hoTen = hoTen ? hoTen.trim().replace(/\s+/g, ' ') : undefined
+        taiKhoan = taiKhoan ? taiKhoan.trim() : undefined
+        matKhau = matKhau ? matKhau.trim() : undefined
+        const nameRegex = /^[a-zA-ZÀ-ỹ\s]+$/
+        if (!nameRegex.test(hoTen)) {
+            return res.status(400).json({ error: "Họ tên chỉ được chứa chữ cái và khoảng trắng" });
+        }
         const updateNguoiDung = await prisma.nguoidung.update({
             where: { idNguoiDung: nguoiDungId },
             data: {
