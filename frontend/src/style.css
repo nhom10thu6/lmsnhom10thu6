@@ -12,6 +12,21 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+/* Reset CSS mặc định của trình duyệt và Vite */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root, #app {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: #eef2f6; /* Màu xám nền đồng nhất với Form */
+  font-family: 'Inter', sans-serif;
+}
 
 a {
   font-weight: 500;

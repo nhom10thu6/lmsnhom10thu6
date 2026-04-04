@@ -3,6 +3,12 @@ const router = express.Router()
 const { PrismaClient } = require('../generated/prisma')
 const prisma = new PrismaClient()
 
+// --- THÊM 2 DÒNG KHAI BÁO NÀY LÊN ĐẦU ĐỂ KHÔNG LỖI ---
+const jwt = require("jsonwebtoken");
+const { OAuth2Client } = require("google-auth-library");
+const googleClient = new OAuth2Client("657089288234-f50a73cblf44qneh64id60j6d1i0d3d6.apps.googleusercontent.com");
+// ---------------------------------------------------
+
 router.post("/login", async (req, res) => {
     try {
         let { taiKhoan, matKhau } = req.body
@@ -115,8 +121,65 @@ router.post("/dangky", async (req, res) => {
         })
 
     } catch (error) {
+        console.error("LỖI DATABASE CHI TIẾT:", error);
         res.status(500).json({ success: false, message: "Không thể đăng ký" })
     }
 })
+
+router.post("/google-login", async (req, res) => {
+  const { idToken } = req.body;
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: "657089288234-f50a73cblf44qneh64id60j6d1i0d3d6.apps.googleusercontent.com",
+    });
+    const { sub: googleId, email, name } = ticket.getPayload();
+
+    let user = await prisma.nguoidung.findFirst({
+      where: { OR: [{ googleId: googleId }, { taiKhoan: email }] }
+    });
+
+    let isNewUser = false; // Biến cờ hiệu
+
+    if (!user) {
+      isNewUser = true; // Đây là người mới tinh
+      user = await prisma.nguoidung.create({
+        data: {
+          hoTen: name,
+          taiKhoan: email,
+          googleId: googleId,
+          vaiTro: "hocvien" // Tạm thời để học viên, lát nữa sẽ cho đổi
+        },
+      });
+    }
+
+    const token = jwt.sign(
+      { idNguoiDung: user.idNguoiDung, vaiTro: user.vaiTro },
+      process.env.JWT_SECRET || "bi_mat_cua_nhom_10",
+      { expiresIn: "1d" }
+    );
+
+    res.json({
+      success: true,
+      token,
+      isNewUser, // Gửi cờ này về Frontend
+      user: { id: user.idNguoiDung, hoTen: user.hoTen, vaiTro: user.vaiTro }
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: "Xác thực thất bại!" });
+  }
+});
+router.post("/update-role", async (req, res) => {
+  const { userId, vaiTro } = req.body;
+  try {
+    const updatedUser = await prisma.nguoidung.update({
+      where: { idNguoiDung: userId },
+      data: { vaiTro: vaiTro }
+    });
+    res.json({ success: true, user: updatedUser });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Không thể cập nhật vai trò" });
+  }
+});
 
 module.exports = router

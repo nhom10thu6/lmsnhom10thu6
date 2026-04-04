@@ -19,20 +19,20 @@ const drive = google.drive({ version: "v3", auth: oauth2Client });
 
 async function uploadFile(file) {
   try {
-    // Chuyển đổi buffer thành stream (Bạn làm phần này rất đúng)
     const bufferStream = new stream.PassThrough();
     bufferStream.end(file.buffer);
 
     const response = await drive.files.create({
       requestBody: {
         name: file.originalname,
-        parents: ["1KWv-nnOnmqsaPMNOoVQab1Kp0snPTWoN"], // Lưu vào folder cụ thể
+        // SỬA DÒNG NÀY: Dùng biến từ file .env thay vì dán ID cứng vào đây
+        parents: [process.env.GOOGLE_DRIVE_FOLDER_ID], 
       },
       media: {
         mimeType: file.mimetype,
         body: bufferStream,
       },
-      // Cờ này cần thiết nếu ID folder ở trên thuộc về một Shared Drive (Bộ nhớ dùng chung)
+      fields: "id", // Thêm dòng này để lấy ID gọn nhẹ hơn
       supportsAllDrives: true, 
     });
 
