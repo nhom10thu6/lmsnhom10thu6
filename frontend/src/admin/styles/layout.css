@@ -30,10 +30,49 @@
   gap: 10px;
 }
 
+.sidebar-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f9fafb;
+}
+
+.sidebar-user-role {
+  font-size: 11px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.nav-logout {
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  color: #b8b8b8;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.nav-logout:hover {
+  background-color: #3b0000;
+  color: #fca5a5;
 }
 
 .nav-item {

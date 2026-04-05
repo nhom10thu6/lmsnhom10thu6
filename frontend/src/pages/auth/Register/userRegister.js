@@ -21,25 +21,26 @@ export const useRegister = () => {
             return;
         }
 
-        if (matKhau.length < 6) {
-            alert('Mật khẩu nên có ít nhất 6 ký tự.');
-            return;
-        }
-
         try {
-            const response = await fetch('http://localhost:5000/auth/dangky', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ hoTen, taiKhoan, matKhau, vaiTro })
+            // ĐÃ BỎ /api ĐỂ ĐỒNG BỘ VỚI TRANG LOGIN
+            const response = await fetch('https://lmsnhom10thu6.onrender.com/auth/dangky', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    hoTen: hoTen.trim(), 
+                    taiKhoan: taiKhoan.trim(), 
+                    matKhau, 
+                    vaiTro 
+                })
             });
 
             const data = await response.json();
 
-            if (response.ok && data.success) {
-                alert('Đăng ký thành công! Vui lòng đăng nhập.');
+            if (data.success) {
+                alert('Đăng ký thành công! Mời bạn đăng nhập.');
                 navigate('/login'); 
             } else {
-                alert(data.message || 'Lỗi đăng ký.');
+                alert(data.message || 'Đăng ký thất bại');
             }
         } catch (error) {
             console.error('Lỗi kết nối:', error);

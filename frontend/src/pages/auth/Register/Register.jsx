@@ -1,9 +1,7 @@
-import React, { useState } from 'react'; // Đã thêm useState
+import React from 'react'; 
 import { Link } from 'react-router-dom';
 import { useRegister } from './userRegister';
 import './Register.css';
-import { GoogleLogin } from '@react-oauth/google';
-import axios from 'axios';
 
 const Register = () => {
     const {
@@ -16,91 +14,8 @@ const Register = () => {
         handleRegister
     } = useRegister();
 
-    // --- THÊM STATE ĐỂ QUẢN LÝ MODAL ---
-    const [showRoleModal, setShowRoleModal] = useState(false);
-    const [tempUser, setTempUser] = useState(null);
-
-    // Hàm xử lý Đăng ký nhanh bằng Google
-    const handleGoogleSuccess = async (credentialResponse) => {
-        try {
-            const res = await axios.post('http://localhost:5000/auth/google-login', {
-                idToken: credentialResponse.credential
-            });
-            
-            if (res.data.success) {
-                localStorage.setItem('token', res.data.token);
-                
-                // NẾU LÀ NGƯỜI MỚI -> HIỆN MODAL LỊCH SỰ
-                if (res.data.isNewUser=true) {
-                    setTempUser(res.data.user);
-                    setShowRoleModal(true); 
-                } else {
-                    // Nếu là người cũ thì vào thẳng
-                    localStorage.setItem('user', JSON.stringify(res.data.user));
-                    const role = res.data.user.vaiTro;
-                    if (role === 'admin') window.location.href = '/admin/dashboard';
-                    else if (role === 'giangvien') window.location.href = '/giangvien/dashboard';
-                    else window.location.href = '/hocvien';
-                }
-            }
-        } catch (err) {
-            console.error("Lỗi Google Login:", err);
-            alert("Đăng nhập Google thất bại!");
-        }
-    };
-
-    // Hàm xử lý khi nhấn chọn vai trò trên Modal
-    const selectRole = async (role) => {
-    try {
-        // 1. Gửi API tạo/cập nhật User trong Database
-        const res = await axios.post('http://localhost:5000/auth/update-role', {
-            userId: tempUser.id || tempUser.idNguoiDung,
-            vaiTro: role
-        });
-
-        if (res.data.success) {
-            // 2. XÓA SẠCH LocalStorage (Để họ không được "đăng nhập lén")
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-
-            // 3. HIỆN THÔNG BÁO THÀNH CÔNG
-            alert(`🎉 Chúc mừng! Bạn đã đăng ký tài khoản ${role === 'giangvien' ? 'GIẢNG VIÊN' : 'HỌC VIÊN'} thành công. \nVui lòng đăng nhập để bắt đầu hành trình!`);
-
-            // 4. ĐẨY VỀ TRANG ĐĂNG NHẬP
-            window.location.href = '/login'; 
-        }
-    } catch (err) {
-        console.error(err);
-        alert("Lỗi hệ thống khi hoàn tất đăng ký!");
-    }
-};
-
     return (
         <div className="register-wrapper">
-            {/* --- MODAL CHỌN VAI TRÒ (HIỆN LÊN GIỮA MÀN HÌNH) --- */}
-            {showRoleModal && (
-                <div className="role-modal-overlay">
-                    <div className="role-modal-content">
-                        <span className="material-symbols-outlined modal-icon">verified_user</span>
-                        <h3>Chào mừng thành viên mới! 🎉</h3>
-                        <p>Vui lòng xác nhận vai trò của bạn để tiếp tục hành trình học tập.</p>
-                        
-                        <div className="role-options">
-                            <div className="role-item" onClick={() => selectRole('giangvien')}>
-                                <span className="material-symbols-outlined">psychology</span>
-                                <h4>GIẢNG VIÊN</h4>
-                                <span>Tôi muốn tạo khóa học</span>
-                            </div>
-                            <div className="role-item" onClick={() => selectRole('hocvien')}>
-                                <span className="material-symbols-outlined">school</span>
-                                <h4>HỌC VIÊN</h4>
-                                <span>Tôi muốn tham gia học</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             <header className="header">
                 <div className="logo">HỆ THỐNG LMS<br />QUẢN LÝ HỌC TẬP</div>
                 <div className="nav-links">
@@ -148,10 +63,18 @@ const Register = () => {
                                 </div>
 
                                 <div className="form-group">
-                                    <label htmlFor="email">EMAIL / TÀI KHOẢN</label>
+                                    {/* ĐỔI THÀNH TÊN TÀI KHOẢN */}
+                                    <label htmlFor="taiKhoan">TÊN TÀI KHOẢN</label>
                                     <div className="input-wrapper">
-                                        <span className="material-symbols-outlined icon">mail</span>
-                                        <input id="email" type="email" placeholder="example@scholaris.edu.vn" value={taiKhoan} onChange={(e) => setTaiKhoan(e.target.value)} required />
+                                        <span className="material-symbols-outlined icon">badge</span>
+                                        <input 
+                                            id="taiKhoan" 
+                                            type="text" 
+                                            placeholder="Nhập tên đăng nhập..." 
+                                            value={taiKhoan} 
+                                            onChange={(e) => setTaiKhoan(e.target.value)} 
+                                            required 
+                                        />
                                     </div>
                                 </div>
 
@@ -183,7 +106,7 @@ const Register = () => {
                                             <option value="hocvien">Học viên</option>
                                             <option value="giangvien">Giảng viên</option>
                                         </select>
-                                        <span className="material-symbols-outlined icon" style={{ pointerEvents: 'none' }}>badge</span>
+                                        <span className="material-symbols-outlined icon" style={{ pointerEvents: 'none' }}>groups</span>
                                     </div>
                                 </div>
 
@@ -191,16 +114,6 @@ const Register = () => {
                                     Tạo tài khoản
                                     <span className="material-symbols-outlined text-sm">arrow_forward</span>
                                 </button>
-
-                                <div className="divider"><span>Hoặc đăng ký nhanh</span></div>
-
-                                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                    <GoogleLogin
-                                        onSuccess={handleGoogleSuccess}
-                                        onError={() => alert("Đăng ký Google thất bại!")}
-                                        width="350"
-                                    />
-                                </div>
                             </form>
 
                             <p className="login-prompt">Đã có tài khoản? <Link to="/login">Đăng nhập</Link></p>

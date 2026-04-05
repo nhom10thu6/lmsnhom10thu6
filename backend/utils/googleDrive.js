@@ -2,11 +2,11 @@ const { google } = require("googleapis");
 const stream = require("stream");
 require("dotenv").config(); // Bắt buộc phải có để đọc file .env
 
-// 1. Khởi tạo xác thực bằng OAuth2 (Thay thế cho Service Account cũ)
+// 1. Khởi tạo xác thực bằng OAuth2 — redirect URI khớp .env (Playground hoặc URI bạn đăng ký)
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  "https://developers.google.com/oauthplayground" // Redirect URI y như lúc cấu hình
+  process.env.GOOGLE_REDIRECT_URI || "https://developers.google.com/oauthplayground",
 );
 
 // 2. Cấp quyền bằng Refresh Token lấy từ Playground
@@ -25,19 +25,31 @@ async function uploadFile(file) {
     const response = await drive.files.create({
       requestBody: {
         name: file.originalname,
-        // SỬA DÒNG NÀY: Dùng biến từ file .env thay vì dán ID cứng vào đây
-        parents: [process.env.GOOGLE_DRIVE_FOLDER_ID], 
+        parents: [process.env.GOOGLE_DRIVE_FOLDER_ID],
       },
       media: {
         mimeType: file.mimetype,
         body: bufferStream,
       },
-      fields: "id", // Thêm dòng này để lấy ID gọn nhẹ hơn
-      supportsAllDrives: true, 
+      fields: "id",
+      supportsAllDrives: true,
     });
 
-    // Trả về link để xem file
-    return `https://drive.google.com/file/d/${response.data.id}/view`;
+    const fileId = response.data.id;
+
+    // Cho phép mọi người có link xem — tránh 403 khi học viên nhúng iframe (không đăng nhập Gmail của GV)
+    try {
+      await drive.permissions.create({
+        fileId,
+        requestBody: { role: "reader", type: "anyone" },
+        supportsAllDrives: true,
+      });
+    } catch (permErr) {
+      console.warn("Drive: không gắn quyền công khai (kiểm tra scope OAuth):", permErr.message);
+    }
+
+    // /preview nhúng iframe ổn định hơn /view (tránh 403 trong LMS)
+    return `https://drive.google.com/file/d/${fileId}/preview`;
     
   } catch (error) {
     console.error("Lỗi khi upload lên Drive:", error.message);

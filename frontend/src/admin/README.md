@@ -69,7 +69,7 @@ admin/
 ### Base URL Configuration
 ```javascript
 // Local development
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://lmsnhom10thu6.onrender.com';
 
 // Production
 const API_BASE_URL = 'https://lmsnhom10thu6.onrender.com';

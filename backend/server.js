@@ -14,6 +14,7 @@ const giangVienQuiz = require('./routes/giangvien/quiz')
 const giangVienBaiHoc = require('./routes/giangvien/baihoc')
 const giangVienCert = require('./routes/giangvien/certificate')
 const giangVienKhoaHoc = require('./routes/giangvien/khoahoc')
+const hocvien = require('./routes/hocvien/hocvien')
 
 // --- MIDDLEWARE ---
 app.use(cors())
@@ -27,6 +28,7 @@ app.use('/admin/classrooms', adminClassrooms)
 app.use('/giang-vien/bai-hoc', giangVienBaiHoc)
 app.use('/giang-vien/certificate', giangVienCert)
 app.use('/giang-vien/khoa-hoc', giangVienKhoaHoc)
+app.use('/api/hocvien', hocvien)
 
 // Test server
 app.get('/', (req, res) => {

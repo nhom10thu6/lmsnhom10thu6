@@ -166,10 +166,12 @@ model quiz_results {
 }
 
 model dangky_khoahoc {
-  idDangKy    Int       @id @default(autoincrement())
-  idNguoiDung Int
-  idKhoaHoc   Int
-  ngayDangKy  DateTime? @default(now())
+  idDangKy       Int       @id @default(autoincrement())
+  idNguoiDung    Int
+  idKhoaHoc      Int
+  ngayDangKy     DateTime? @default(now())
+  /// Khóa miễn phí: ghi nhận ngay khi đăng ký. Khóa trả phí: null cho đến khi thanh toán xong.
+  ngayThanhToan  DateTime?
 
   nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung])
   khoahoc   khoahoc   @relation(fields: [idKhoaHoc], references: [idKhoaHoc])

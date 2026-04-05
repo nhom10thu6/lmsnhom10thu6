@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-import './style.css' // CSS Reset full màn hình của chúng ta
+import './style.css' 
 
 // --- Import các trang Auth ---
 import Login from './pages/auth/Login/Login.jsx'
@@ -21,45 +21,62 @@ import QuanLyKhoaHoc from './giangvien/pages/QuanLyKhoaHoc.jsx';
 import QuanLyGiaoTrinh from './giangvien/pages/QuanLyGiaoTrinh.jsx';
 import QuanLyBangDiem from './giangvien/pages/QuanLyBangDiem.jsx';
 
-// --- THƯ VIỆN GOOGLE ---
-import { GoogleOAuthProvider } from '@react-oauth/google';
-import ChooseRole from './pages/auth/ChooseRole';
+// --- Import các trang Học Viên ---
+import HocVienLayout from './hocvien/components/HocVienLayout.jsx';
+import DashboardHV from './hocvien/pages/DashboardHV.jsx';
+import KhamPhaKhoaHoc from './hocvien/pages/KhamPhaKhoaHoc.jsx';
+import KhoaHocCuaToi from './hocvien/pages/KhoaHocCuaToi.jsx';
+import ChiTietKhoaHoc from './hocvien/pages/ChiTietKhoaHoc.jsx';
+import BaiHocView from './hocvien/pages/BaiHocView.jsx';
+import LamQuiz from './hocvien/pages/LamQuiz.jsx';
+import ChungChiHV from './hocvien/pages/ChungChiHV.jsx';
+import ChoThanhToan from './hocvien/pages/ChoThanhToan.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {/* CHÈN GOOGLE PROVIDER Ở ĐÂY */}
-    <GoogleOAuthProvider clientId="657089288234-f50a73cblf44qneh64id60j6d1i0d3d6.apps.googleusercontent.com">
-      <BrowserRouter>
-        <Routes>
-          {/* Mặc định vào web sẽ chuyển hướng đến trang Login */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/choose-role" element={<ChooseRole />} />
-          
-          {/* Các trang Đăng nhập / Đăng ký */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* --- LUỒNG GIAO DIỆN ADMIN --- */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="users" element={<Users />} />
-            <Route path="classrooms" element={<Classrooms />} />
-          </Route>
+    {/* GỠ BỎ GOOGLE OAUTH PROVIDER */}
+    <BrowserRouter>
+      <Routes>
+        {/* Mặc định vào web sẽ chuyển hướng đến trang Login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        
+        {/* Các trang Đăng nhập / Đăng ký */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        
+        {/* --- LUỒNG GIAO DIỆN ADMIN --- */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="users" element={<Users />} />
+          <Route path="classrooms" element={<Classrooms />} />
+        </Route>
 
-          {/* --- LUỒNG GIAO DIỆN GIẢNG VIÊN --- */}
-          <Route path="/giangvien" element={<GiangVienLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardGV />} />
-            <Route path="khoa-hoc" element={<QuanLyKhoaHoc />} />
-            <Route path="giao-trinh" element={<QuanLyGiaoTrinh />} />
-            <Route path="bang-diem" element={<QuanLyBangDiem />} />
-          </Route>
+        {/* --- LUỒNG GIAO DIỆN GIẢNG VIÊN --- */}
+        <Route path="/giangvien" element={<GiangVienLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardGV />} />
+          <Route path="khoa-hoc" element={<QuanLyKhoaHoc />} />
+          <Route path="giao-trinh" element={<QuanLyGiaoTrinh />} />
+          <Route path="bang-diem" element={<QuanLyBangDiem />} />
+        </Route>
 
-          {/* Bắt lỗi đường dẫn không tồn tại */}
-          <Route path="*" element={<h1 style={{textAlign: 'center', marginTop: '50px'}}>404 - Trang không tồn tại</h1>} />
-        </Routes>
-      </BrowserRouter>
-    </GoogleOAuthProvider>
+        {/* --- LUỒNG GIAO DIỆN HỌC VIÊN --- */}
+        <Route path="/hocvien" element={<HocVienLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardHV />} />
+          <Route path="khoa-hoc" element={<KhamPhaKhoaHoc />} />
+          <Route path="thanh-toan" element={<ChoThanhToan />} />
+          <Route path="khoa-hoc-cua-toi" element={<KhoaHocCuaToi />} />
+          <Route path="khoa-hoc-cua-toi/:idKhoaHoc" element={<ChiTietKhoaHoc />} />
+          <Route path="bai-hoc/:idBaiHoc" element={<BaiHocView />} />
+          <Route path="quiz/:idQuiz" element={<LamQuiz />} />
+          <Route path="chung-chi" element={<ChungChiHV />} />
+        </Route>
+
+        {/* Bắt lỗi đường dẫn không tồn tại */}
+        <Route path="*" element={<h1 style={{textAlign: 'center', marginTop: '50px'}}>404 - Trang không tồn tại</h1>} />
+      </Routes>
+    </BrowserRouter>
   </React.StrictMode>
 )

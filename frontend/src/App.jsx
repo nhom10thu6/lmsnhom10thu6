@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useState } from "react";
 
 // LOCAL
-// const API_URL = "http://localhost:5000"
+// const API_URL = "https://lmsnhom10thu6.onrender.com"
 
 // RENDER
 const API_URL = "https://lmsnhom10thu6.onrender.com"

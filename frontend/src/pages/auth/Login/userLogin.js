@@ -7,23 +7,30 @@ export const useLogin = () => {
     const [showPassword, setShowPassword] = useState(false);
     
     const navigate = useNavigate();
-
     const togglePassword = () => setShowPassword(!showPassword);
 
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:5000/auth/login', {
-           method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ taiKhoan, matKhau })
+            // ĐÃ BỎ /api ĐỂ KHỚP VỚI ROUTE BACKEND
+            const response = await fetch('https://lmsnhom10thu6.onrender.com/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ taiKhoan: taiKhoan.trim(), matKhau })
             });
+
             const data = await response.json();
 
             if (data.success) {
                 alert(data.message);
+                
+                // LƯU TOKEN VÀO LOCALSTORAGE
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                }
+                
                 localStorage.setItem('user', JSON.stringify(data.user));
-                navigate(data.redirectTo); // Chuyển hướng dựa theo role
+                navigate(data.redirectTo); 
             } else {
                 alert(data.message || 'Đăng nhập thất bại');
             }

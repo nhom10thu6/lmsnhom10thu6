@@ -1,185 +1,157 @@
-const express = require('express')
-const router = express.Router()
-const { PrismaClient } = require('../generated/prisma')
-const prisma = new PrismaClient()
+const express = require('express');
+const router = express.Router();
+const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
+const { PrismaClient } = require('../generated/prisma');
 
-// --- THÊM 2 DÒNG KHAI BÁO NÀY LÊN ĐẦU ĐỂ KHÔNG LỖI ---
-const jwt = require("jsonwebtoken");
-const { OAuth2Client } = require("google-auth-library");
-const googleClient = new OAuth2Client("657089288234-f50a73cblf44qneh64id60j6d1i0d3d6.apps.googleusercontent.com");
-// ---------------------------------------------------
+const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'lms-dev-secret-change-me';
+const GOOGLE_CLIENT_ID =
+  process.env.GOOGLE_CLIENT_ID ||
+  '657089288234-f50a73cblf44qneh64id60j6d1i0d3d6.apps.googleusercontent.com';
 
-router.post("/login", async (req, res) => {
-    try {
-        let { taiKhoan, matKhau } = req.body
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
-        taiKhoan = taiKhoan ? taiKhoan.trim() : undefined
-        matKhau = matKhau ? matKhau.trim() : undefined
-        if (!taiKhoan || !matKhau) {
-            return res.status(400).json({
-                success: false,
-                message: "Vui lòng nhập tài khoản và mật khẩu"
-            })
-        }
+function userPayload(u) {
+  return {
+    id: u.idNguoiDung,
+    idNguoiDung: u.idNguoiDung,
+    hoTen: u.hoTen,
+    taiKhoan: u.taiKhoan,
+    vaiTro: u.vaiTro,
+  };
+}
 
-        const nguoiDung = await prisma.nguoidung.findUnique({
-            where: { taiKhoan }
-        })
+function redirectForRole(vaiTro) {
+  if (vaiTro === 'admin') return '/admin/dashboard';
+  if (vaiTro === 'giangvien') return '/giangvien/dashboard';
+  return '/hocvien';
+}
 
-        if (!nguoiDung) {
-            return res.status(401).json({
-                success: false,
-                message: "Tài khoản không tồn tại"
-            })
-        }
-
-        if (matKhau !== nguoiDung.matKhau) {
-            return res.status(401).json({
-                success: false,
-                message: "Mật khẩu không chính xác"
-            })
-        }
-
-        let duongDan = "/"
-        switch (nguoiDung.vaiTro) {
-            case "admin":
-                duongDan = "/admin"
-                break
-            case "giangvien":
-                duongDan = "/giangvien"
-                break
-            case "hocvien":
-                duongDan = "/khoahoc"
-                break
-        }
-
-        res.json({
-            success: true,
-            message: "Đăng nhập thành công",
-            user: {
-                id: nguoiDung.idNguoiDung,
-                hoTen: nguoiDung.hoTen,
-                taiKhoan: nguoiDung.taiKhoan,
-                vaiTro: nguoiDung.vaiTro
-            },
-            redirectTo: duongDan
-        })
-
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Không thể đăng nhập" })
-    }
-})
-
-
-router.post("/dangky", async (req, res) => {
-    try {
-        let { hoTen, taiKhoan, matKhau, vaiTro } = req.body
-        hoTen = hoTen ? hoTen.trim().replace(/\s+/g, ' ') : undefined
-        taiKhoan = taiKhoan ? taiKhoan.trim() : undefined
-        matKhau = matKhau ? matKhau.trim() : undefined
-        const nameRegex = /^[a-zA-ZÀ-ỹ\s]+$/
-        if (!hoTen || !taiKhoan || !matKhau) {
-            return res.status(400).json({
-                success: false,
-                message: "Vui lòng điền đầy đủ thông tin"
-            })
-        }
-
-        if(!nameRegex.test(hoTen)) {
-            return res.status(400).json({
-                success: false,
-                message: "Họ tên chỉ được chứa chữ cái và khoảng trắng"
-            })
-        }
-
-        const existing = await prisma.nguoidung.findUnique({
-            where: { taiKhoan }
-        })
-
-        if (existing) {
-            return res.status(409).json({
-                success: false,
-                message: "Tài khoản đã tồn tại"
-            })
-        }
-
-        const nguoiDungMoi = await prisma.nguoidung.create({
-            data: {
-                hoTen,
-                taiKhoan,
-                matKhau,
-                vaiTro: ["giangvien", "hocvien"].includes(vaiTro)
-                    ? vaiTro
-                    : "hocvien"
-            }
-        })
-
-        res.status(201).json({
-            success: true,
-            message: "Đăng ký thành công",
-            user: nguoiDungMoi
-        })
-
-    } catch (error) {
-        console.error("LỖI DATABASE CHI TIẾT:", error);
-        res.status(500).json({ success: false, message: "Không thể đăng ký" })
-    }
-})
-
-router.post("/google-login", async (req, res) => {
-  const { idToken } = req.body;
+router.post('/login', async (req, res) => {
   try {
+    const { taiKhoan, matKhau } = req.body;
+    if (!taiKhoan || !matKhau) {
+      return res.status(400).json({ success: false, message: 'Nhập đủ tài khoản và mật khẩu.' });
+    }
+    const user = await prisma.nguoidung.findUnique({
+      where: { taiKhoan: String(taiKhoan).trim() },
+    });
+    if (!user || !user.matKhau || user.matKhau !== matKhau) {
+      return res.status(401).json({ success: false, message: 'Sai tài khoản hoặc mật khẩu.' });
+    }
+    return res.json({
+      success: true,
+      message: 'Đăng nhập thành công.',
+      user: userPayload(user),
+      redirectTo: redirectForRole(user.vaiTro),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
+  }
+});
+
+router.post('/dangky', async (req, res) => {
+  try {
+    let { hoTen, taiKhoan, matKhau, vaiTro } = req.body;
+    hoTen = hoTen ? String(hoTen).trim() : '';
+    taiKhoan = taiKhoan ? String(taiKhoan).trim() : '';
+    matKhau = matKhau ? String(matKhau) : '';
+    if (!hoTen || !taiKhoan || !matKhau) {
+      return res.status(400).json({ success: false, message: 'Thiếu thông tin bắt buộc.' });
+    }
+    const exists = await prisma.nguoidung.findUnique({ where: { taiKhoan } });
+    if (exists) {
+      return res.status(409).json({ success: false, message: 'Tài khoản đã tồn tại.' });
+    }
+    const role = ['admin', 'giangvien', 'hocvien'].includes(vaiTro) ? vaiTro : 'hocvien';
+    await prisma.nguoidung.create({
+      data: { hoTen, taiKhoan, matKhau, vaiTro: role },
+    });
+    return res.json({ success: true, message: 'Đăng ký thành công.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
+  }
+});
+
+router.post('/update-role', async (req, res) => {
+  try {
+    const { userId, vaiTro } = req.body;
+    const id = parseInt(userId, 10);
+    if (!id || !['hocvien', 'giangvien'].includes(vaiTro)) {
+      return res.status(400).json({ success: false, message: 'Dữ liệu không hợp lệ.' });
+    }
+    await prisma.nguoidung.update({
+      where: { idNguoiDung: id },
+      data: { vaiTro },
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
+  }
+});
+
+router.post('/google-login', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ success: false, message: 'Thiếu idToken.' });
+    }
     const ticket = await googleClient.verifyIdToken({
       idToken,
-      audience: "657089288234-f50a73cblf44qneh64id60j6d1i0d3d6.apps.googleusercontent.com",
+      audience: GOOGLE_CLIENT_ID,
     });
-    const { sub: googleId, email, name } = ticket.getPayload();
+    const payload = ticket.getPayload();
+    const email = payload.email;
+    const sub = payload.sub;
+    const name = payload.name || email;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Google không cấp email.' });
+    }
 
     let user = await prisma.nguoidung.findFirst({
-      where: { OR: [{ googleId: googleId }, { taiKhoan: email }] }
+      where: { OR: [{ googleId: sub }, { taiKhoan: email }] },
     });
 
-    let isNewUser = false; // Biến cờ hiệu
-
+    let isNewUser = false;
     if (!user) {
-      isNewUser = true; // Đây là người mới tinh
+      isNewUser = true;
       user = await prisma.nguoidung.create({
         data: {
           hoTen: name,
           taiKhoan: email,
-          googleId: googleId,
-          vaiTro: "hocvien" // Tạm thời để học viên, lát nữa sẽ cho đổi
+          matKhau: null,
+          googleId: sub,
+          vaiTro: 'hocvien',
         },
+      });
+    } else if (!user.googleId) {
+      user = await prisma.nguoidung.update({
+        where: { idNguoiDung: user.idNguoiDung },
+        data: { googleId: sub },
       });
     }
 
     const token = jwt.sign(
-      { idNguoiDung: user.idNguoiDung, vaiTro: user.vaiTro },
-      process.env.JWT_SECRET || "bi_mat_cua_nhom_10",
-      { expiresIn: "1d" }
+      { uid: user.idNguoiDung, vaiTro: user.vaiTro },
+      JWT_SECRET,
+      { expiresIn: '7d' },
     );
 
-    res.json({
+    return res.json({
       success: true,
       token,
-      isNewUser, // Gửi cờ này về Frontend
-      user: { id: user.idNguoiDung, hoTen: user.hoTen, vaiTro: user.vaiTro }
+      isNewUser,
+      user: userPayload(user),
     });
-  } catch (error) {
-    res.status(400).json({ success: false, message: "Xác thực thất bại!" });
-  }
-});
-router.post("/update-role", async (req, res) => {
-  const { userId, vaiTro } = req.body;
-  try {
-    const updatedUser = await prisma.nguoidung.update({
-      where: { idNguoiDung: userId },
-      data: { vaiTro: vaiTro }
-    });
-    res.json({ success: true, user: updatedUser });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Không thể cập nhật vai trò" });
+  } catch (err) {
+    console.error('google-login', err);
+    res.status(401).json({ success: false, message: 'Xác thực Google thất bại.' });
   }
 });
 
-module.exports = router
+module.exports = router;

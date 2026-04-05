@@ -2,7 +2,7 @@
 :root {
     --primary: #00288e;
     --signature-gradient: linear-gradient(135deg, #00288e 0%, #1e40af 100%);
-    --surface: #eef2f6; /* Nền xám xanh nhạt để làm nổi bật Form */
+    --surface: #eef2f6; 
     --surface-container-lowest: #ffffff;
     --surface-container-low: #eff4ff;
     --on-surface: #0d1c2e;
@@ -27,7 +27,7 @@
 .register-wrapper a { text-decoration: none; }
 .register-wrapper button { cursor: pointer; border: none; background: transparent; font-family: inherit; }
 
-/* --- Header (Thanh Navbar trắng trên cùng) --- */
+/* --- Header --- */
 .register-wrapper .header {
     width: 100%;
     height: 70px;
@@ -64,20 +64,20 @@
 .register-wrapper .main-container {
     flex-grow: 1; display: flex; align-items: center; justify-content: center;
     padding: 2rem;
-    margin-top: 70px; /* Cách thanh Navbar ra */
+    margin-top: 70px; 
     min-height: calc(100vh - 70px);
 }
 
 .register-wrapper .register-card {
-    width: 100%; max-width: 1050px; /* Cân đối lại kích thước khung */
+    width: 100%; max-width: 1050px; 
     background-color: var(--surface-container-lowest);
-    border-radius: 1rem; /* Bo góc mượt hơn */
-    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); /* Đổ bóng 3D */
+    border-radius: 1rem; 
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); 
     display: grid; grid-template-columns: 1fr;
     overflow: hidden;
 }
 @media (min-width: 1024px) {
-    .register-wrapper .register-card { grid-template-columns: 5fr 7fr; } /* Layout 5/7 */
+    .register-wrapper .register-card { grid-template-columns: 5fr 7fr; } 
 }
 
 /* --- Left Panel --- */
@@ -103,13 +103,13 @@
     backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
     padding: 1.5rem; border-radius: 0.5rem;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    color: var(--on-primary-fixed);
+    color: white;
 }
-.register-wrapper .quote { font-weight: 500; font-style: italic; font-size: 0.875rem; margin-bottom: 0.5rem; opacity: 0.8; color: white;}
+.register-wrapper .quote { font-weight: 500; font-style: italic; font-size: 0.875rem; margin-bottom: 0.5rem; opacity: 0.8; }
 .register-wrapper .brand-tag { display: flex; align-items: center; gap: 0.75rem; }
 .register-wrapper .brand-icon { width: 2rem; height: 2rem; border-radius: 50%; background-color: var(--primary-fixed); display: flex; align-items: center; justify-content: center; }
 .register-wrapper .brand-icon span { font-size: 0.75rem; color: var(--primary); }
-.register-wrapper .brand-text { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; color: white; }
+.register-wrapper .brand-text { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; }
 
 /* --- Right Panel (Form) --- */
 .register-wrapper .panel-right { padding: 2rem; background-color: var(--surface-container-lowest); }
@@ -143,7 +143,6 @@
     box-sizing: border-box;
 }
 .register-wrapper .input-wrapper input:focus { box-shadow: 0 0 0 2px rgba(0,40,142,0.2); }
-.register-wrapper .input-wrapper input::placeholder { color: rgba(117, 118, 132, 0.5); }
 
 /* Buttons */
 .register-wrapper .btn-primary {
@@ -154,21 +153,6 @@
 }
 .register-wrapper .btn-primary:hover { opacity: 0.9; }
 .register-wrapper .btn-primary:active { transform: scale(0.98); }
-
-.register-wrapper .divider { display: flex; align-items: center; margin: 1rem 0; }
-.register-wrapper .divider::before, .register-wrapper .divider::after { content: ""; flex-grow: 1; border-top: 1px solid var(--outline-variant); }
-.register-wrapper .divider span { margin: 0 1rem; font-size: 0.75rem; font-weight: 700; color: var(--outline); text-transform: uppercase; letter-spacing: 0.1em; }
-
-.register-wrapper .btn-social {
-    width: 100%; background-color: var(--surface-container-lowest);
-    border: 1px solid var(--outline-variant); padding: 0.75rem; border-radius: 0.5rem;
-    display: flex; align-items: center; justify-content: center; gap: 0.75rem;
-    transition: all 0.2s;
-}
-.register-wrapper .btn-social:hover { background-color: var(--surface-container-low); }
-.register-wrapper .btn-social:active { transform: scale(0.98); }
-.register-wrapper .btn-social span { color: var(--on-surface-variant); font-weight: 500; font-size: 0.875rem; }
-.register-wrapper .btn-social:hover span { color: var(--on-surface); }
 
 .register-wrapper .login-prompt { margin-top: 2rem; text-align: center; font-size: 0.875rem; color: var(--on-surface-variant); }
 .register-wrapper .login-prompt a { color: var(--primary); font-weight: 700; margin-left: 0.25rem; }
@@ -185,63 +169,25 @@
 .register-wrapper .footer-links { display: flex; gap: 1.5rem; }
 .register-wrapper .footer-links a, .register-wrapper .footer-copyright { font-size: 0.875rem; color: #64748b; }
 .register-wrapper .footer-links a:hover { color: #2563eb; }
-/* Overlay làm mờ nền */
-.role-modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px);
-    display: flex; align-items: center; justify-content: center; z-index: 10000;
-}
 
-/* Nội dung Modal */
-.role-modal-content {
-    background: white; padding: 40px; border-radius: 24px; width: 500px; text-align: center;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: popUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.modal-icon { font-size: 60px; color: #3b82f6; margin-bottom: 15px; }
-
-.role-options { display: flex; gap: 20px; margin-top: 30px; }
-
-.role-item {
-    flex: 1; padding: 25px 15px; border: 2px solid #f1f5f9; border-radius: 16px;
-    cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 10px;
-}
-
-.role-item:hover {
-    border-color: #3b82f6; background: #eff6ff; transform: translateY(-8px);
-    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.1);
-}
-
-.role-item .material-symbols-outlined { font-size: 48px; color: #3b82f6; }
-.role-item h4 { margin: 0; color: #1e293b; font-weight: 700; }
-.role-item span { font-size: 13px; color: #64748b; }
-
-@keyframes popUp {
-    from { opacity: 0; transform: scale(0.8); }
-    to { opacity: 1; transform: scale(1); }
-}
-/* --- CHỈNH LẠI CON MẮT ẨN/HIỆN MẬT KHẨU --- */
+/* --- CON MẮT ẨN/HIỆN MẬT KHẨU --- */
 .register-wrapper .toggle-password-reg {
     position: absolute;
-    right: 15px;         /* Cách mép phải 15px */
-    top: 50%;            /* Căn giữa theo chiều dọc */
-    transform: translateY(-50%); /* Chỉnh tọa độ chuẩn 100% */
+    right: 15px; 
+    top: 50%; 
+    transform: translateY(-50%);
     background: transparent;
     border: none;
     cursor: pointer;
     padding: 0;
     display: flex;
     align-items: center;
-    color: var(--outline); /* Cùng màu với icon ổ khóa */
+    color: var(--outline);
     z-index: 10;
 }
 
-/* Hiệu ứng rê chuột vào con mắt sáng lên */
-.register-wrapper .toggle-password-reg:hover {
-    color: var(--primary);
-}
+.register-wrapper .toggle-password-reg:hover { color: var(--primary); }
 
-/* Đẩy chữ bên trong ô input sang trái một chút để không đè lên con mắt */
-.register-wrapper .form-group:nth-child(3) .input-wrapper input {
+.register-wrapper .form-row .form-group .input-wrapper input {
     padding-right: 45px; 
 }

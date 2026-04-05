@@ -1,21 +1,21 @@
 import React from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { getAdminUserId, setAdminUserId } from '../services/api';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import '../styles/layout.css';
 
 export default function AdminLayout() {
   const location = useLocation();
-  const [adminId, setAdminId] = React.useState(getAdminUserId());
-  const [saveMessage, setSaveMessage] = React.useState('');
+  const navigate = useNavigate();
+
+  // Lấy thông tin user đăng nhập từ localStorage
+  const userString = localStorage.getItem('user');
+  const currentUser = userString ? JSON.parse(userString) : null;
 
   const isActive = (path) => location.pathname.startsWith(path);
-  const handleSaveAdminId = () => {
-    if (!adminId || Number.isNaN(Number(adminId))) {
-      setSaveMessage('ID admin không hợp lệ');
-      return;
-    }
-    setAdminUserId(adminId);
-    setSaveMessage('Đã lưu ID admin');
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('adminUserId');
+    navigate('/login');
   };
 
   return (
@@ -23,19 +23,12 @@ export default function AdminLayout() {
       <aside className="admin-sidebar">
         <div className="sidebar-header">
           <h1>⚙️ Admin Panel</h1>
-          <div style={{ marginTop: 12 }}>
-            <input
-              value={adminId}
-              onChange={(e) => setAdminId(e.target.value)}
-              placeholder="Admin ID"
-              className="form-input"
-              style={{ marginBottom: 8 }}
-            />
-            <button type="button" className="btn btn-sm btn-edit" onClick={handleSaveAdminId}>
-              Lưu ID
-            </button>
-            {saveMessage && <p style={{ fontSize: 12, marginTop: 8 }}>{saveMessage}</p>}
-          </div>
+          {currentUser && (
+            <div className="sidebar-user-info">
+              <span className="sidebar-user-name">👑 {currentUser.hoTen || currentUser.taiKhoan}</span>
+              <span className="sidebar-user-role">Quản Trị Viên</span>
+            </div>
+          )}
         </div>
 
         <nav className="sidebar-nav">
@@ -66,10 +59,10 @@ export default function AdminLayout() {
 
           <hr className="nav-divider" />
 
-          <a href="/" className="nav-item">
-            <span className="nav-icon">🏠</span>
-            <span className="nav-text">Về Trang Chủ</span>
-          </a>
+          <button className="nav-item nav-logout" onClick={handleLogout}>
+            <span className="nav-icon">🚪</span>
+            <span className="nav-text">Đăng Xuất</span>
+          </button>
         </nav>
       </aside>
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://lmsnhom10thu6.onrender.com';
 const ADMIN_USER_ID_KEY = 'adminUserId';
 
 const api = axios.create({
@@ -36,6 +36,7 @@ export const usersAPI = {
     const params = role ? { role } : {};
     return api.get('/admin/users', { params });
   },
+  search: (taiKhoan) => api.get('/admin/users/search', { params: { taiKhoan } }),
   getById: (id) => api.get(`/admin/users/${id}`),
   create: (userData) => api.post('/admin/users', userData),
   update: (id, userData) => api.put(`/admin/users/${id}`, userData),
@@ -45,6 +46,7 @@ export const usersAPI = {
 // Admin Classrooms API
 export const classroomsAPI = {
   getAll: () => api.get('/admin/classrooms'),
+  search: (params) => api.get('/admin/classrooms/search', { params }),
   getById: (id) => api.get(`/admin/classrooms/${id}`),
   create: (classroomData) => api.post('/admin/classrooms', classroomData),
   update: (id, classroomData) => api.put(`/admin/classrooms/${id}`, classroomData),
