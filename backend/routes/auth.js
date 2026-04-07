@@ -1,17 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const { OAuth2Client } = require('google-auth-library');
 const { PrismaClient } = require('../generated/prisma');
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'lms-dev-secret-change-me';
-const GOOGLE_CLIENT_ID =
-  process.env.GOOGLE_CLIENT_ID ||
-  '657089288234-f50a73cblf44qneh64id60j6d1i0d3d6.apps.googleusercontent.com';
 
-const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
-
+// --- GIỮ NGUYÊN CÁC HÀM CỦA LIÊM ---
 function userPayload(u) {
   return {
     id: u.idNguoiDung,
@@ -28,6 +23,9 @@ function redirectForRole(vaiTro) {
   return '/hocvien';
 }
 
+/* =========================
+    LOGIN TRUYỀN THỐNG (GIỮ NGUYÊN)
+========================= */
 router.post('/login', async (req, res) => {
   try {
     const { taiKhoan, matKhau } = req.body;
@@ -40,9 +38,18 @@ router.post('/login', async (req, res) => {
     if (!user || !user.matKhau || user.matKhau !== matKhau) {
       return res.status(401).json({ success: false, message: 'Sai tài khoản hoặc mật khẩu.' });
     }
+
+    // Liêm lưu ý: Thêm dòng tạo token này để đồng bộ với logic cũ của Liêm nhé
+    const token = jwt.sign(
+      { uid: user.idNguoiDung, vaiTro: user.vaiTro },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     return res.json({
       success: true,
       message: 'Đăng nhập thành công.',
+      token, // Trả về token giống bên google-login cũ
       user: userPayload(user),
       redirectTo: redirectForRole(user.vaiTro),
     });
@@ -52,6 +59,9 @@ router.post('/login', async (req, res) => {
   }
 });
 
+/* =========================
+    ĐĂNG KÝ (GIỮ NGUYÊN)
+========================= */
 router.post('/dangky', async (req, res) => {
   try {
     let { hoTen, taiKhoan, matKhau, vaiTro } = req.body;
@@ -76,6 +86,9 @@ router.post('/dangky', async (req, res) => {
   }
 });
 
+/* =========================
+    UPDATE ROLE (GIỮ NGUYÊN)
+========================= */
 router.post('/update-role', async (req, res) => {
   try {
     const { userId, vaiTro } = req.body;
@@ -91,66 +104,6 @@ router.post('/update-role', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
-  }
-});
-
-router.post('/google-login', async (req, res) => {
-  try {
-    const { idToken } = req.body;
-    if (!idToken) {
-      return res.status(400).json({ success: false, message: 'Thiếu idToken.' });
-    }
-    const ticket = await googleClient.verifyIdToken({
-      idToken,
-      audience: GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    const email = payload.email;
-    const sub = payload.sub;
-    const name = payload.name || email;
-
-    if (!email) {
-      return res.status(400).json({ success: false, message: 'Google không cấp email.' });
-    }
-
-    let user = await prisma.nguoidung.findFirst({
-      where: { OR: [{ googleId: sub }, { taiKhoan: email }] },
-    });
-
-    let isNewUser = false;
-    if (!user) {
-      isNewUser = true;
-      user = await prisma.nguoidung.create({
-        data: {
-          hoTen: name,
-          taiKhoan: email,
-          matKhau: null,
-          googleId: sub,
-          vaiTro: 'hocvien',
-        },
-      });
-    } else if (!user.googleId) {
-      user = await prisma.nguoidung.update({
-        where: { idNguoiDung: user.idNguoiDung },
-        data: { googleId: sub },
-      });
-    }
-
-    const token = jwt.sign(
-      { uid: user.idNguoiDung, vaiTro: user.vaiTro },
-      JWT_SECRET,
-      { expiresIn: '7d' },
-    );
-
-    return res.json({
-      success: true,
-      token,
-      isNewUser,
-      user: userPayload(user),
-    });
-  } catch (err) {
-    console.error('google-login', err);
-    res.status(401).json({ success: false, message: 'Xác thực Google thất bại.' });
   }
 });
 

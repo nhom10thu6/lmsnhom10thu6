@@ -32,13 +32,24 @@ import LamQuiz from './hocvien/pages/LamQuiz.jsx';
 import ChungChiHV from './hocvien/pages/ChungChiHV.jsx';
 import ChoThanhToan from './hocvien/pages/ChoThanhToan.jsx';
 
+// --- COMPONENT ĐIỀU HƯỚNG THÔNG MINH ---
+const HomeRedirect = () => {
+  const storedUser = localStorage.getItem('user');
+  if (storedUser) {
+    const user = JSON.parse(storedUser);
+    if (user.vaiTro === 'giangvien') return <Navigate to="/giangvien/dashboard" replace />;
+    if (user.vaiTro === 'admin') return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to="/hocvien/dashboard" replace />;
+  }
+  return <Navigate to="/login" replace />;
+};
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {/* GỠ BỎ GOOGLE OAUTH PROVIDER */}
     <BrowserRouter>
       <Routes>
-        {/* Mặc định vào web sẽ chuyển hướng đến trang Login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* THAY ĐỔI DUY NHẤT Ở ĐÂY: Nhấn về trang chủ sẽ tự nhận diện vai trò */}
+        <Route path="/" element={<HomeRedirect />} />
         
         {/* Các trang Đăng nhập / Đăng ký */}
         <Route path="/login" element={<Login />} />

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 // Import "ké" file CSS của Admin để tận dụng 100% giao diện đã có
 import '../../admin/styles/layout.css';
 
 export default function GiangVienLayout() {
   const location = useLocation();
+  const navigate = useNavigate(); // Dùng cái này để điều hướng an toàn hơn
   const [userInfo, setUserInfo] = useState({ hoTen: 'Giảng viên' });
 
-  // Tự động lấy tên người dùng từ localStorage khi vừa vào trang
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -17,20 +17,20 @@ export default function GiangVienLayout() {
   }, []);
 
   const isActive = (path) => location.pathname.startsWith(path);
+
+  // HÀM ĐĂNG XUẤT: Chỉ chạy khi bấm đúng nút Đăng Xuất
   const handleLogout = () => {
-  if (window.confirm("Bạn có chắc chắn muốn đăng xuất?")) {
-    localStorage.clear(); // Xóa sạch dữ liệu đăng nhập
-    window.location.href = "/login"; // Quay về trang đăng nhập
-  }
-};
+    if (window.confirm("Bạn có chắc chắn muốn đăng xuất?")) {
+      localStorage.clear(); 
+      window.location.href = "/login"; 
+    }
+  };
 
   return (
     <div className="admin-layout">
-      {/* Cột Sidebar bên trái */}
       <aside className="admin-sidebar">
         <div className="sidebar-header">
           <h1>👨‍🏫 Giảng Viên</h1>
-          {/* Hiển thị tên Giảng viên thay vì ô nhập ID */}
           <div style={{ marginTop: 15, padding: '12px', backgroundColor: '#202020', borderRadius: '8px' }}>
             <div style={{ fontSize: 12, color: '#999' }}>Đang đăng nhập:</div>
             <div style={{ fontSize: 15, fontWeight: '600', color: '#fff', marginTop: 4 }}>
@@ -74,21 +74,20 @@ export default function GiangVienLayout() {
 
           <hr className="nav-divider" />
 
+          {/* SỬA CHỖ NÀY: Dùng Link thay vì thẻ a, và đảm bảo không reload trang */}
           <Link to="/" className="nav-item">
             <span className="nav-icon">🏠</span>
             <span className="nav-text">Về Trang Chủ</span>
           </Link>
 
-          {/* Nút Đăng xuất đặt ở đây */}
           <div 
-            className="nav-item" 
+            className="nav-item logout-btn" 
             onClick={handleLogout} 
-            style={{ color: '#ff4d4f', marginTop: 'auto' }} // Màu đỏ để gây chú ý
+            style={{ color: '#ff4d4f', marginTop: '20px', cursor: 'pointer' }}
           >
             <span className="nav-icon">🚪</span>
             <span className="nav-text">Đăng Xuất</span>
           </div>
-
         </nav>
       </aside>
 
