@@ -2,7 +2,9 @@ Nhiệm vụ: Liêm + Khoa: FE admin + giảng viên + học viên + login/đăn
 
 Lưu ý: Xong tính năng nào cập nhật bên dưới file Readme
 
-Liêm + Khoa: Hiền + Bình: Hào: Danh: Đã xong BE login/đăng ký + BE admin user/classroom
+Liêm + Khoa:  Hào: Danh: Đã xong BE login/đăng ký + BE admin user/classroom
+
+Hiền + Bình: api tạo bài kiểm tra + api trả điểm học viên cho giảng viên(CHƯA TEST ) + api xóa bài kiểm tra + api sửa bài kiểm tra
 
 Hiền đã làm xong: API tạo bài học(Tạo, sửa, xóa(Đã test api), chưa làm chức năng lưu vào API của drive, Xem đã test API, ceritificate đã test API)
 

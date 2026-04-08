@@ -10,7 +10,27 @@ const { chuaKyTuNguyHiem } = require("../../helper/helper.js");
 const { uploadFile, deleteFile } = require("../../utils/googleDrive");
 
 /* =========================
-   TẠO BÀI HỌC
+   LẤY DANH SÁCH BÀI HỌC (MỚI THÊM)
+   Dùng để hiện dữ liệu lên bảng khi chọn khóa học
+========================= */
+router.get("/lay-danh-sach/:idKhoaHoc", checkGiangVien, async (req, res) => {
+  try {
+    const { idKhoaHoc } = req.params;
+    const danhSach = await prisma.baihoc.findMany({
+      where: { idKhoaHoc: parseInt(idKhoaHoc) },
+      orderBy: { thuTu: 'asc' }
+    });
+    return res.json({
+      success: true,
+      data: danhSach
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Lỗi lấy bài học" });
+  }
+});
+
+/* =========================
+   TẠO BÀI HỌC (Upload Drive của Hìn)
 ========================= */
 router.post(
   "/tao-bai-hoc",
@@ -55,10 +75,7 @@ router.post(
 
       /* ===== CHECK QUYỀN ===== */
       const khoaHoc = await prisma.khoahoc.findFirst({
-        where: {
-          idKhoaHoc: idKH,
-          idGiangVien,
-        },
+        where: { idKhoaHoc: idKH, idGiangVien },
       });
 
       if (!khoaHoc) {
@@ -141,7 +158,7 @@ router.post(
 );
 
 /* =========================
-   XÓA BÀI HỌC
+   XÓA BÀI HỌC (Có xóa luôn file trên Drive)
 ========================= */
 router.delete("/xoa-bai-hoc/:idBaiHoc", checkGiangVien, async (req, res) => {
   try {
@@ -173,14 +190,10 @@ router.delete("/xoa-bai-hoc/:idBaiHoc", checkGiangVien, async (req, res) => {
       });
     }
 
-    // ===========================================
-
     await prisma.baihoc.delete({
       where: { idBaiHoc: id },
     });
 
-    // === GỌI HÀM XÓA FILE TRÊN GOOGLE DRIVE ===
-    // Chỉ gọi xóa nếu URL có chứa "drive.google.com" (đề phòng link Youtube)
     // === GỌI HÀM XÓA FILE TRÊN GOOGLE DRIVE ===
     if (baiHoc.videoUrl && baiHoc.videoUrl.includes("drive.google.com")) {
       await deleteFile(baiHoc.videoUrl).catch((err) =>
@@ -204,7 +217,7 @@ router.delete("/xoa-bai-hoc/:idBaiHoc", checkGiangVien, async (req, res) => {
 });
 
 /* =========================
-   SỬA BÀI HỌC (Upload file mới thì xóa file cũ)
+   SỬA BÀI HỌC (Upload file mới thì xóa file cũ Drive)
 ========================= */
 router.put(
   "/sua-bai-hoc/:idBaiHoc",
@@ -253,14 +266,12 @@ router.put(
           file.mimetype.includes("excel") ||
           file.mimetype.includes("presentation");
 
-        // 2. Chặn ngay nếu file không hợp lệ
         if (!isVid && !isDoc) {
           return res
             .status(400)
             .json({ success: false, message: "File không hợp lệ" });
         }
 
-        // 3. File chuẩn -> Upload lên Drive
         const fileUrl = await uploadFile(file);
 
         if (isVid) {
@@ -290,7 +301,6 @@ router.put(
       });
 
       // 5. XÓA FILE CŨ TRÊN DRIVE NẾU CÓ UPLOAD FILE MỚI
-      // (Chạy ngầm với .catch() để phản hồi nhanh và không làm crash nếu Drive lỗi)
       if (file) {
         if (baiHoc.videoUrl?.includes("drive.google.com")) {
           deleteFile(baiHoc.videoUrl).catch((err) =>
@@ -322,7 +332,6 @@ router.put(
 router.get("/khoa-hoc-cua-toi", checkGiangVien, async (req, res) => {
   try {
     const idGiangVien = req.user.idNguoiDung;
-
     const danhSach = await prisma.khoahoc.findMany({
       where: { idGiangVien },
       include: {
@@ -332,6 +341,7 @@ router.get("/khoa-hoc-cua-toi", checkGiangVien, async (req, res) => {
           },
         },
         quizzes: true,
+        dangky_khoahoc: true // Đã giữ lại trường dangky_khoahoc của Liêm
       },
     });
 

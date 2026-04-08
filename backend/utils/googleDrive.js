@@ -1,15 +1,15 @@
 const { google } = require("googleapis");
 const stream = require("stream");
-require("dotenv").config(); // Bắt buộc phải có để đọc file .env
+require("dotenv").config();
 
-// 1. Khởi tạo xác thực bằng OAuth2 (Thay thế cho Service Account cũ)
+// 1. Khởi tạo xác thực bằng OAuth2
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  "https://developers.google.com/oauthplayground" // Redirect URI y như lúc cấu hình
+  process.env.GOOGLE_REDIRECT_URI || "https://developers.google.com/oauthplayground",
 );
 
-// 2. Cấp quyền bằng Refresh Token lấy từ Playground
+// 2. Cấp quyền bằng Refresh Token
 oauth2Client.setCredentials({
   refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
 });
@@ -19,38 +19,63 @@ const drive = google.drive({ version: "v3", auth: oauth2Client });
 
 async function uploadFile(file) {
   try {
-    // Chuyển đổi buffer thành stream (Bạn làm phần này rất đúng)
+    // --- BƯỚC XỬ LÝ ID THƯ MỤC CỰC KỲ QUAN TRỌNG ---
+    // Loại bỏ dấu ngoặc kép, dấu nháy và khoảng trắng dư thừa
+    const folderId = (process.env.GOOGLE_DRIVE_FOLDER_ID || "")
+      .replace(/['"]/g, "")
+      .trim();
+
+    console.log("--- DEBUG UPLOAD ---");
+    console.log("Target Folder ID:", `[${folderId}]`);
+    console.log("File Name:", file.originalname);
+
     const bufferStream = new stream.PassThrough();
     bufferStream.end(file.buffer);
 
     const response = await drive.files.create({
       requestBody: {
         name: file.originalname,
-        parents: ["1KWv-nnOnmqsaPMNOoVQab1Kp0snPTWoN"], // Lưu vào folder cụ thể
+        // Ép buộc file phải vào đúng thư mục này
+        parents: [folderId], 
       },
       media: {
         mimeType: file.mimetype,
         body: bufferStream,
       },
-      // Cờ này cần thiết nếu ID folder ở trên thuộc về một Shared Drive (Bộ nhớ dùng chung)
-      supportsAllDrives: true, 
+      fields: "id",
+      supportsAllDrives: true,
     });
 
-    // Trả về link để xem file
-    return `https://drive.google.com/file/d/${response.data.id}/view`;
+    const fileId = response.data.id;
+    console.log("=> Upload thành công! File ID:", fileId);
+
+    // Gắn quyền xem công khai (anyone can view)
+    try {
+      await drive.permissions.create({
+        fileId,
+        requestBody: { role: "reader", type: "anyone" },
+        supportsAllDrives: true,
+      });
+      console.log("=> Đã mở quyền xem công khai.");
+    } catch (permErr) {
+      console.warn("Drive: Cảnh báo gắn quyền:", permErr.message);
+    }
+
+    return `https://drive.google.com/file/d/${fileId}/preview`;
     
   } catch (error) {
-    console.error("Lỗi khi upload lên Drive:", error.message);
+    console.error("❌ Lỗi upload Drive chi tiết:", error.message);
+    // In thêm dữ liệu lỗi từ Google nếu có
+    if (error.response) console.error("Data lỗi:", error.response.data);
     throw error;
   }
 }
 
 /**
- * Hàm hỗ trợ lấy ID file từ URL của Google Drive
+ * Hàm hỗ trợ lấy ID file từ URL
  */
 const getFileIdFromUrl = (url) => {
   if (!url) return null;
-  // Regex này sẽ tìm chuỗi ký tự dài khoảng 25-33 ký tự (chính là ID của Google Drive)
   const match = url.match(/[-\w]{25,}/);
   return match ? match[0] : null;
 };
@@ -61,28 +86,14 @@ const getFileIdFromUrl = (url) => {
 const deleteFile = async (fileUrl) => {
   try {
     const fileId = getFileIdFromUrl(fileUrl);
-    
-    if (!fileId) {
-      console.log("Không tìm thấy ID hợp lệ trong URL:", fileUrl);
-      return false;
-    }
+    if (!fileId) return false;
 
-    // Khởi tạo drive với auth của bạn (nhớ thay đổi auth bằng biến auth bạn đang dùng)
-    const drive = google.drive({ version: "v3", auth: oauth2Client }); 
-
-    await drive.files.delete({
-      fileId: fileId,
-    });
-
-    console.log(`Đã xóa thành công file có ID: ${fileId} trên Google Drive`);
+    await drive.files.delete({ fileId: fileId });
+    console.log(`Đã xóa thành công file ID: ${fileId}`);
     return true;
   } catch (error) {
-    // Nếu file đã bị xóa thủ công trước đó, API sẽ trả về lỗi 404
-    if (error.code === 404) {
-      console.log("File không còn tồn tại trên Google Drive (có thể đã bị xóa).");
-      return true; // Vẫn coi như thành công để tiếp tục flow xóa DB
-    }
-    console.error("Lỗi khi xóa file trên Google Drive:", error.message);
+    if (error.code === 404) return true;
+    console.error("Lỗi khi xóa file:", error.message);
     return false;
   }
 };

@@ -29,7 +29,7 @@ model khoahoc {
   dangky_khoahoc    dangky_khoahoc[]
   instructor_payout instructor_payout[]
   progress          progress[]
-  quizzes           quizzes[]
+  quizzes            quizzes[]
 
   nguoidung nguoidung? @relation(fields: [idGiangVien], references: [idNguoiDung])
 
@@ -38,11 +38,18 @@ model khoahoc {
 
 model nguoidung {
   idNguoiDung Int    @id @default(autoincrement())
-  hoTen       String
-  taiKhoan    String @unique
-  matKhau     String?
-  vaiTro      nguoidung_vaiTro? @default(hocvien)
+  hoTen        String
+  taiKhoan     String @unique
+  
+  // 1. SỬA: Thêm dấu ? để mật khẩu có thể trống khi dùng Google
+  matKhau      String? 
+  
+  vaiTro       nguoidung_vaiTro? @default(hocvien)
 
+  // 2. THÊM: Lưu ID định danh từ Google để nhận diện người dùng
+  googleId     String? @unique
+
+  // --- CÁC QUAN HỆ CŨ GIỮ NGUYÊN 100% ---
   certificates      certificates[]
   dangky_khoahoc    dangky_khoahoc[]
   instructor_payout instructor_payout[]
@@ -71,7 +78,7 @@ model certificates {
   idKhoaHoc     Int?
   ngayCap       DateTime? @default(now())
 
-  khoahoc   khoahoc?  @relation(fields: [idKhoaHoc], references: [idKhoaHoc])
+  khoahoc  khoahoc?  @relation(fields: [idKhoaHoc], references: [idKhoaHoc])
   nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung])
 
   @@index([idNguoiDung])
@@ -130,6 +137,14 @@ model quiz_questions {
   dapAnDung  String?
   diemCauHoi Decimal? @default(1.00)
 
+  // --- Trac Ngiem ---
+  loaiCauHoi  String?  @default("tracnghiem")
+  dapAnA      String?  
+  dapAnB      String?  
+  dapAnC      String?  
+  dapAnD      String?  
+  // ----------------------------------------------
+
   quizzes quizzes @relation(fields: [idQuiz], references: [idQuiz], onDelete: Cascade)
 
   @@index([idQuiz])
@@ -151,10 +166,12 @@ model quiz_results {
 }
 
 model dangky_khoahoc {
-  idDangKy    Int       @id @default(autoincrement())
-  idNguoiDung Int
-  idKhoaHoc   Int
-  ngayDangKy  DateTime? @default(now())
+  idDangKy       Int       @id @default(autoincrement())
+  idNguoiDung    Int
+  idKhoaHoc      Int
+  ngayDangKy     DateTime? @default(now())
+  /// Khóa miễn phí: ghi nhận ngay khi đăng ký. Khóa trả phí: null cho đến khi thanh toán xong.
+  ngayThanhToan  DateTime?
 
   nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung])
   khoahoc   khoahoc   @relation(fields: [idKhoaHoc], references: [idKhoaHoc])

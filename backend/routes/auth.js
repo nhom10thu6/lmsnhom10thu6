@@ -1,110 +1,110 @@
-const express = require('express')
-const router = express.Router()
-const { PrismaClient } = require('../generated/prisma')
-const prisma = new PrismaClient()
+const express = require('express');
+const router = express.Router();
+const jwt = require('jsonwebtoken');
+const { PrismaClient } = require('../generated/prisma');
 
-router.post("/login", async (req, res) => {
-    try {
-        const { taiKhoan, matKhau } = req.body
+const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'lms-dev-secret-change-me';
 
-        if (!taiKhoan || !matKhau) {
-            return res.status(400).json({
-                success: false,
-                message: "Vui lòng nhập tài khoản và mật khẩu"
-            })
-        }
+// --- GIỮ NGUYÊN CÁC HÀM CỦA LIÊM ---
+function userPayload(u) {
+  return {
+    id: u.idNguoiDung,
+    idNguoiDung: u.idNguoiDung,
+    hoTen: u.hoTen,
+    taiKhoan: u.taiKhoan,
+    vaiTro: u.vaiTro,
+  };
+}
 
-        const nguoiDung = await prisma.nguoidung.findUnique({
-            where: { taiKhoan }
-        })
+function redirectForRole(vaiTro) {
+  if (vaiTro === 'admin') return '/admin/dashboard';
+  if (vaiTro === 'giangvien') return '/giangvien/dashboard';
+  return '/hocvien';
+}
 
-        if (!nguoiDung) {
-            return res.status(401).json({
-                success: false,
-                message: "Tài khoản không tồn tại"
-            })
-        }
-
-        if (matKhau !== nguoiDung.matKhau) {
-            return res.status(401).json({
-                success: false,
-                message: "Mật khẩu không chính xác"
-            })
-        }
-
-        let duongDan = "/"
-        switch (nguoiDung.vaiTro) {
-            case "admin":
-                duongDan = "/admin"
-                break
-            case "giangvien":
-                duongDan = "/giangvien"
-                break
-            case "hocvien":
-                duongDan = "/khoahoc"
-                break
-        }
-
-        res.json({
-            success: true,
-            message: "Đăng nhập thành công",
-            user: {
-                id: nguoiDung.idNguoiDung,
-                hoTen: nguoiDung.hoTen,
-                taiKhoan: nguoiDung.taiKhoan,
-                vaiTro: nguoiDung.vaiTro
-            },
-            redirectTo: duongDan
-        })
-
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Không thể đăng nhập" })
+/* =========================
+    LOGIN TRUYỀN THỐNG (GIỮ NGUYÊN)
+========================= */
+router.post('/login', async (req, res) => {
+  try {
+    const { taiKhoan, matKhau } = req.body;
+    if (!taiKhoan || !matKhau) {
+      return res.status(400).json({ success: false, message: 'Nhập đủ tài khoản và mật khẩu.' });
     }
-})
-
-
-router.post("/dangky", async (req, res) => {
-    try {
-        const { hoTen, taiKhoan, matKhau, vaiTro } = req.body
-
-        if (!hoTen || !taiKhoan || !matKhau) {
-            return res.status(400).json({
-                success: false,
-                message: "Vui lòng điền đầy đủ thông tin"
-            })
-        }
-
-        const existing = await prisma.nguoidung.findUnique({
-            where: { taiKhoan }
-        })
-
-        if (existing) {
-            return res.status(409).json({
-                success: false,
-                message: "Tài khoản đã tồn tại"
-            })
-        }
-
-        const nguoiDungMoi = await prisma.nguoidung.create({
-            data: {
-                hoTen,
-                taiKhoan,
-                matKhau,
-                vaiTro: ["giangvien", "hocvien"].includes(vaiTro)
-                    ? vaiTro
-                    : "hocvien"
-            }
-        })
-
-        res.status(201).json({
-            success: true,
-            message: "Đăng ký thành công",
-            user: nguoiDungMoi
-        })
-
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Không thể đăng ký" })
+    const user = await prisma.nguoidung.findUnique({
+      where: { taiKhoan: String(taiKhoan).trim() },
+    });
+    if (!user || !user.matKhau || user.matKhau !== matKhau) {
+      return res.status(401).json({ success: false, message: 'Sai tài khoản hoặc mật khẩu.' });
     }
-})
 
-module.exports = router
+    // Liêm lưu ý: Thêm dòng tạo token này để đồng bộ với logic cũ của Liêm nhé
+    const token = jwt.sign(
+      { uid: user.idNguoiDung, vaiTro: user.vaiTro },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    return res.json({
+      success: true,
+      message: 'Đăng nhập thành công.',
+      token, // Trả về token giống bên google-login cũ
+      user: userPayload(user),
+      redirectTo: redirectForRole(user.vaiTro),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
+  }
+});
+
+/* =========================
+    ĐĂNG KÝ (GIỮ NGUYÊN)
+========================= */
+router.post('/dangky', async (req, res) => {
+  try {
+    let { hoTen, taiKhoan, matKhau, vaiTro } = req.body;
+    hoTen = hoTen ? String(hoTen).trim() : '';
+    taiKhoan = taiKhoan ? String(taiKhoan).trim() : '';
+    matKhau = matKhau ? String(matKhau) : '';
+    if (!hoTen || !taiKhoan || !matKhau) {
+      return res.status(400).json({ success: false, message: 'Thiếu thông tin bắt buộc.' });
+    }
+    const exists = await prisma.nguoidung.findUnique({ where: { taiKhoan } });
+    if (exists) {
+      return res.status(409).json({ success: false, message: 'Tài khoản đã tồn tại.' });
+    }
+    const role = ['admin', 'giangvien', 'hocvien'].includes(vaiTro) ? vaiTro : 'hocvien';
+    await prisma.nguoidung.create({
+      data: { hoTen, taiKhoan, matKhau, vaiTro: role },
+    });
+    return res.json({ success: true, message: 'Đăng ký thành công.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
+  }
+});
+
+/* =========================
+    UPDATE ROLE (GIỮ NGUYÊN)
+========================= */
+router.post('/update-role', async (req, res) => {
+  try {
+    const { userId, vaiTro } = req.body;
+    const id = parseInt(userId, 10);
+    if (!id || !['hocvien', 'giangvien'].includes(vaiTro)) {
+      return res.status(400).json({ success: false, message: 'Dữ liệu không hợp lệ.' });
+    }
+    await prisma.nguoidung.update({
+      where: { idNguoiDung: id },
+      data: { vaiTro },
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
+  }
+});
+
+module.exports = router;

@@ -1,35 +1,93 @@
-// import './style.css'
-// import javascriptLogo from './javascript.svg'
-// import viteLogo from '/vite.svg'
-// import { setupCounter } from './counter.js'
-// import App from './App.jsx'
-
-// document.querySelector('#app').innerHTML = `
-//   <div>
-//     <a href="https://vite.dev" target="_blank">
-//       <img src="${viteLogo}" class="logo" alt="Vite logo" />
-//     </a>
-//     <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-//       <img src="${javascriptLogo}" class="logo vanilla" alt="JavaScript logo" />
-//     </a>
-//     <h1>Hello Vite!</h1>
-//     <div class="card">
-//       <button id="counter" type="button"></button>
-//     </div>
-//     <p class="read-the-docs">
-//       Click on the Vite logo to learn more
-//     </p>
-//   </div>
-// `
-
-// setupCounter(document.querySelector('#counter'))
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
-import './style.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+
+import './style.css' 
+
+// --- Import các trang Auth ---
+import Login from './pages/auth/Login/Login.jsx'
+import Register from './pages/auth/Register/Register.jsx'
+
+// --- Import các trang Admin ---
+import AdminLayout from './admin/components/AdminLayout.jsx'
+import Dashboard from './admin/pages/Dashboard.jsx'
+import Users from './admin/pages/Users.jsx'
+import Classrooms from './admin/pages/Classrooms.jsx'
+
+// --- Import các trang Giảng viên ---
+import GiangVienLayout from './giangvien/components/GiangVienLayout.jsx';
+import DashboardGV from './giangvien/pages/DashboardGV.jsx';
+import QuanLyKhoaHoc from './giangvien/pages/QuanLyKhoaHoc.jsx';
+import QuanLyGiaoTrinh from './giangvien/pages/QuanLyGiaoTrinh.jsx';
+import QuanLyBangDiem from './giangvien/pages/QuanLyBangDiem.jsx';
+
+// --- Import các trang Học Viên ---
+import HocVienLayout from './hocvien/components/HocVienLayout.jsx';
+import DashboardHV from './hocvien/pages/DashboardHV.jsx';
+import KhamPhaKhoaHoc from './hocvien/pages/KhamPhaKhoaHoc.jsx';
+import KhoaHocCuaToi from './hocvien/pages/KhoaHocCuaToi.jsx';
+import ChiTietKhoaHoc from './hocvien/pages/ChiTietKhoaHoc.jsx';
+import BaiHocView from './hocvien/pages/BaiHocView.jsx';
+import LamQuiz from './hocvien/pages/LamQuiz.jsx';
+import ChungChiHV from './hocvien/pages/ChungChiHV.jsx';
+import ChoThanhToan from './hocvien/pages/ChoThanhToan.jsx';
+
+// --- COMPONENT ĐIỀU HƯỚNG THÔNG MINH ---
+const HomeRedirect = () => {
+  const storedUser = localStorage.getItem('user');
+  if (storedUser) {
+    const user = JSON.parse(storedUser);
+    if (user.vaiTro === 'giangvien') return <Navigate to="/giangvien/dashboard" replace />;
+    if (user.vaiTro === 'admin') return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to="/hocvien/dashboard" replace />;
+  }
+  return <Navigate to="/login" replace />;
+};
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <Routes>
+        {/* THAY ĐỔI DUY NHẤT Ở ĐÂY: Nhấn về trang chủ sẽ tự nhận diện vai trò */}
+        <Route path="/" element={<HomeRedirect />} />
+        
+        {/* Các trang Đăng nhập / Đăng ký */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        
+        {/* --- LUỒNG GIAO DIỆN ADMIN --- */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="users" element={<Users />} />
+          <Route path="classrooms" element={<Classrooms />} />
+        </Route>
+
+        {/* --- LUỒNG GIAO DIỆN GIẢNG VIÊN --- */}
+        <Route path="/giangvien" element={<GiangVienLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardGV />} />
+          <Route path="khoa-hoc" element={<QuanLyKhoaHoc />} />
+          <Route path="giao-trinh" element={<QuanLyGiaoTrinh />} />
+          <Route path="bang-diem" element={<QuanLyBangDiem />} />
+        </Route>
+
+        {/* --- LUỒNG GIAO DIỆN HỌC VIÊN --- */}
+        <Route path="/hocvien" element={<HocVienLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardHV />} />
+          <Route path="khoa-hoc" element={<KhamPhaKhoaHoc />} />
+          <Route path="thanh-toan" element={<ChoThanhToan />} />
+          <Route path="khoa-hoc-cua-toi" element={<KhoaHocCuaToi />} />
+          <Route path="khoa-hoc-cua-toi/:idKhoaHoc" element={<ChiTietKhoaHoc />} />
+          <Route path="bai-hoc/:idBaiHoc" element={<BaiHocView />} />
+          <Route path="quiz/:idQuiz" element={<LamQuiz />} />
+          <Route path="chung-chi" element={<ChungChiHV />} />
+        </Route>
+
+        {/* Bắt lỗi đường dẫn không tồn tại */}
+        <Route path="*" element={<h1 style={{textAlign: 'center', marginTop: '50px'}}>404 - Trang không tồn tại</h1>} />
+      </Routes>
+    </BrowserRouter>
   </React.StrictMode>
 )

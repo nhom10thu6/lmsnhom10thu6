@@ -1,0 +1,291 @@
+/* Classrooms Page */
+.classrooms-page {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Search Section - unified single bar */
+.search-section {
+  margin-bottom: 16px;
+  padding: 14px 20px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Thanh search gộp */
+.search-bar {
+  display: flex;
+  align-items: center;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f9fafb;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-bar:focus-within {
+  border-color: #111827;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
+  background: white;
+}
+
+/* Dropdown chọn loại tìm */
+.search-type-select {
+  padding: 11px 10px 11px 14px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+  min-width: 185px;
+  font-family: inherit;
+}
+
+.search-type-select:focus {
+  outline: none;
+}
+
+/* Đường kẻ ngăn cách */
+.search-divider {
+  width: 1px;
+  height: 24px;
+  background: #d1d5db;
+  flex-shrink: 0;
+}
+
+/* Input tìm kiếm */
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  width: 100%;
+  padding: 11px 36px 11px 14px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #111827;
+  outline: none;
+  font-family: inherit;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+/* Nút xóa bên trong input */
+.btn-clear-search {
+  position: absolute;
+  right: 8px;
+  background: #e5e7eb;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 11px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-clear-search:hover {
+  background: #d1d5db;
+  color: #111827;
+}
+
+/* Nút tìm kiếm */
+.btn-search {
+  padding: 11px 20px;
+  background: #111827;
+  color: white;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+  font-family: inherit;
+  border-radius: 0;
+}
+
+.btn-search:hover {
+  background: #1f2937;
+}
+
+/* Kết quả tìm kiếm */
+.search-result-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 8px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #15803d;
+}
+
+.btn-reset-search {
+  background: none;
+  border: 1px solid #86efac;
+  color: #15803d;
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s;
+  margin-left: auto;
+}
+
+.btn-reset-search:hover {
+  background: #dcfce7;
+}
+
+
+/* Classrooms List Table */
+.classrooms-list {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.classrooms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.classrooms-table thead {
+  background: #111827;
+  color: #f9fafb;
+}
+
+.classrooms-table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.classrooms-table tbody tr {
+  border-bottom: 1px solid #eee;
+  transition: all 0.2s ease;
+}
+
+.classrooms-table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+.classrooms-table td {
+  padding: 14px 16px;
+}
+
+.classroom-row {
+  background-color: rgba(17, 24, 39, 0.015);
+}
+
+.classroom-row:hover {
+  background-color: rgba(17, 24, 39, 0.05);
+}
+
+.cell-id {
+  font-weight: 600;
+  color: #111827;
+}
+
+.cell-name {
+  font-weight: 500;
+  color: #333;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-instructor {
+  color: #666;
+}
+
+.cell-price {
+  font-weight: 600;
+  color: #111827;
+}
+
+.cell-category {
+  color: #999;
+  font-size: 13px;
+}
+
+.cell-students {
+  text-align: center;
+}
+
+.student-badge {
+  display: inline-block;
+  background-color: #e5e7eb;
+  color: #111827;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.cell-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .cell-name {
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .classrooms-table {
+    font-size: 12px;
+  }
+
+  .classrooms-table th,
+  .classrooms-table td {
+    padding: 10px 8px;
+  }
+
+  .cell-name {
+    max-width: 100px;
+  }
+
+  .btn-sm {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
+  .cell-actions {
+    gap: 4px;
+  }
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

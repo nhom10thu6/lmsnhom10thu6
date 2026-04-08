@@ -32,6 +32,66 @@ router.get("/",checkAdmin ,async (req, res) => {
         res.status(500).json({ error: "Không lấy được dữ liệu" });
     }
 });
+
+router.get("/search", checkAdmin, async (req, res) => {
+    try {
+        const { taiKhoan, tenKhoaHoc, tenGiangVien } = req.query;
+        let whereCondition = {};
+        
+        if (taiKhoan) {
+            whereCondition.nguoidung = {
+                taiKhoan: {
+                    contains: taiKhoan,
+                    mode: 'insensitive'
+                }
+            };
+        }
+        
+        if (tenKhoaHoc) {
+            whereCondition.tenKhoaHoc = {
+                contains: tenKhoaHoc,
+                mode: 'insensitive'
+            };
+        }
+
+        if (tenGiangVien) {
+            whereCondition.nguoidung = {
+                hoTen: {
+                    contains: tenGiangVien,
+                    mode: 'insensitive'
+                }
+            };
+        }
+        
+        const dsKhoaHoc = await prisma.khoahoc.findMany({
+            where: whereCondition,
+            include: {
+                nguoidung: {
+                    select: {
+                        hoTen: true,
+                    },
+                },
+                _count: {
+                    select: {
+                        dangky_khoahoc: true
+                    }
+                }
+            },
+        });
+
+        const result = dsKhoaHoc.map(kh => ({
+            ...kh,
+            soHocVien: kh._count.dangky_khoahoc,
+        }));
+
+        res.json(result);
+        
+    } catch (error) {
+        console.error("Lỗi khi tìm kiếm khóa học:", error);
+        res.status(500).json({ error: "Không thể tìm kiếm dữ liệu" });
+    }
+});
+
 router.get("/:id",checkAdmin, async (req, res) => {
     try {
         const khoaHocId = parseInt(req.params.id);
@@ -64,7 +124,10 @@ router.get("/:id",checkAdmin, async (req, res) => {
 
 router.post("/", checkAdmin, async (req, res) => {
     try {
-        const { tenKhoaHoc, moTa, gia, danhMuc, idGiangVien } = req.body;
+        let { tenKhoaHoc, moTa, gia, danhMuc, idGiangVien } = req.body;
+        tenKhoaHoc = tenKhoaHoc ? tenKhoaHoc.trim() : undefined
+        moTa = moTa ? moTa.trim() : undefined
+        danhMuc = danhMuc ? danhMuc.trim() : undefined
         if (!tenKhoaHoc || !moTa || !gia) {
             return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
         }
@@ -124,7 +187,10 @@ router.delete("/:id", checkAdmin, async (req, res) => {
 router.put("/:id", checkAdmin, async (req, res) => {
     try {
         const khoaHocId = parseInt(req.params.id);
-        const { tenKhoaHoc, moTa, gia, danhMuc, idGiangVien } = req.body;
+        let { tenKhoaHoc, moTa, gia, danhMuc, idGiangVien } = req.body;
+        tenKhoaHoc = tenKhoaHoc ? tenKhoaHoc.trim() : undefined
+        moTa = moTa ? moTa.trim() : undefined
+        danhMuc = danhMuc ? danhMuc.trim() : undefined
         const updateKhoaHoc = await prisma.khoahoc.update({
             where: { idKhoaHoc: khoaHocId },
             data: {
