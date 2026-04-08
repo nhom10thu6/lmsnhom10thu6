@@ -40,7 +40,7 @@ model nguoidung {
   idNguoiDung Int    @id @default(autoincrement())
   hoTen       String
   taiKhoan    String @unique
-  matKhau     String
+  matKhau     String?
   vaiTro      nguoidung_vaiTro? @default(hocvien)
 
   certificates      certificates[]
