@@ -45,9 +45,8 @@ const HomeRedirect = () => {
 };
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <Routes>
+  <BrowserRouter>
+    <Routes>
         {/* THAY ĐỔI DUY NHẤT Ở ĐÂY: Nhấn về trang chủ sẽ tự nhận diện vai trò */}
         <Route path="/" element={<HomeRedirect />} />
         
@@ -87,7 +86,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
         {/* Bắt lỗi đường dẫn không tồn tại */}
         <Route path="*" element={<h1 style={{textAlign: 'center', marginTop: '50px'}}>404 - Trang không tồn tại</h1>} />
-      </Routes>
-    </BrowserRouter>
-  </React.StrictMode>
+    </Routes>
+  </BrowserRouter>
 )

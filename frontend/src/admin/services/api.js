@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://lmsnhom10thu6.onrender.com';
+const DEFAULT_REMOTE_API = 'https://lmsnhom10thu6.onrender.com';
+const DEFAULT_LOCAL_API = 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+  || (window.location.hostname === 'localhost' ? DEFAULT_LOCAL_API : DEFAULT_REMOTE_API);
 const ADMIN_USER_ID_KEY = 'adminUserId';
 
 const api = axios.create({

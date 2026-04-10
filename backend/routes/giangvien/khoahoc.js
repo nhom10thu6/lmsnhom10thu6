@@ -7,7 +7,36 @@ const prisma = new PrismaClient();
 const { checkGiangVien } = require('../middleware/middleware');
 const { chuaKyTuNguyHiem } = require('../../helper/helper.js');
 
+const parseGiaInput = (gia) => {
+  if (gia === undefined || gia === null || gia === '') return 0;
+  if (typeof gia === 'number') {
+    return Number.isFinite(gia) ? gia : NaN;
+  }
 
+  const raw = String(gia).trim().replace(/[^\d.,-]/g, '');
+  if (raw === '') return NaN;
+
+  // Cho phép nhập kiểu 100.000 / 1,000,000 và quy về số nguyên VND.
+  if (/^\d{1,3}([.,]\d{3})+$/.test(raw)) {
+    return Number(raw.replace(/[.,]/g, ''));
+  }
+
+  const normalized = raw.replace(',', '.');
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : NaN;
+};
+
+const formatGia = (gia) =>{
+  if (gia === null || gia === undefined) return '0';
+  return parseFloat(gia).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
+}
+
+const formatKhoaHoc = (khoaHoc) => {
+  return {
+    ...khoaHoc,
+    gia: formatGia(khoaHoc.gia)
+  }
+}
 /* =========================
    TẠO KHÓA HỌC
 ========================= */
@@ -51,7 +80,7 @@ router.post("/tao-khoa-hoc", checkGiangVien, async (req, res) => {
     let giaParsed = 0;
 
     if (gia !== undefined && gia !== null) {
-      giaParsed = parseFloat(gia);
+      giaParsed = parseGiaInput(gia);
 
       if (isNaN(giaParsed) || giaParsed < 0) {
         return res.status(400).json({
@@ -97,7 +126,7 @@ router.post("/tao-khoa-hoc", checkGiangVien, async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "Tạo khóa học thành công",
-      data: khoaHoc
+      data: formatKhoaHoc(khoaHoc)
     });
 
   } catch (error) {
@@ -153,7 +182,7 @@ router.put("/sua-khoa-hoc/:id", checkGiangVien, async (req, res) => {
     // 3. Validate giá (nếu có thay đổi)
     let giaUpdate = khoaHocHienTai.gia;
     if (gia !== undefined) {
-      const giaParsed = parseFloat(gia);
+      const giaParsed = parseGiaInput(gia);
       if (isNaN(giaParsed) || giaParsed < 0 || giaParsed > 100000000) {
         return res.status(400).json({ success: false, message: "Giá không hợp lệ" });
       }
@@ -174,7 +203,7 @@ router.put("/sua-khoa-hoc/:id", checkGiangVien, async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Cập nhật khóa học thành công",
-      data: khoaHocCapNhat
+      data: formatKhoaHoc(khoaHocCapNhat)
     });
 
   } catch (error) {
@@ -190,10 +219,15 @@ router.delete("/xoa-khoa-hoc/:id", checkGiangVien, async (req, res) => {
   try {
     const { id } = req.params;
     const idGiangVien = req.user.idNguoiDung;
+    const idKhoaHoc = parseInt(id, 10);
+
+    if (Number.isNaN(idKhoaHoc)) {
+      return res.status(400).json({ success: false, message: "ID khóa học không hợp lệ" });
+    }
 
     // 1. Kiểm tra tồn tại và quyền sở hữu
     const khoaHoc = await prisma.khoahoc.findUnique({
-      where: { idKhoaHoc: parseInt(id) }
+      where: { idKhoaHoc }
     });
 
     if (!khoaHoc) {
@@ -204,11 +238,30 @@ router.delete("/xoa-khoa-hoc/:id", checkGiangVien, async (req, res) => {
       return res.status(403).json({ success: false, message: "Bạn không có quyền xóa khóa học này" });
     }
 
-    // 2. Thực hiện xóa
-    // Lưu ý: Nếu có bảng con (như bài giảng, học viên đăng ký), 
-    // bạn cần xử lý xóa cascade hoặc báo lỗi nếu có dữ liệu liên quan.
-    await prisma.khoahoc.delete({
-      where: { idKhoaHoc: parseInt(id) }
+    // 2. Dọn dữ liệu liên quan để tránh lỗi khóa ngoại (P2003)
+    const quizzes = await prisma.quizzes.findMany({
+      where: { idKhoaHoc },
+      select: { idQuiz: true }
+    });
+    const quizIds = quizzes.map((q) => q.idQuiz);
+
+    await prisma.$transaction(async (tx) => {
+      if (quizIds.length > 0) {
+        await tx.quiz_results.deleteMany({
+          where: { idQuiz: { in: quizIds } }
+        });
+      }
+
+      await tx.certificates.deleteMany({ where: { idKhoaHoc } });
+      await tx.instructor_payout.deleteMany({ where: { idKhoaHoc } });
+      await tx.dangky_khoahoc.deleteMany({ where: { idKhoaHoc } });
+      await tx.progress.deleteMany({ where: { idKhoaHoc } });
+      await tx.quizzes.deleteMany({ where: { idKhoaHoc } });
+      await tx.baihoc.deleteMany({ where: { idKhoaHoc } });
+
+      await tx.khoahoc.delete({
+        where: { idKhoaHoc }
+      });
     });
 
     return res.status(200).json({

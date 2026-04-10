@@ -4,7 +4,8 @@ export const giangVienAPI = {
   // --- API KHÓA HỌC ---
   getKhoaHocCuaToi: () => api.get('/giang-vien/bai-hoc/khoa-hoc-cua-toi'),
   taoKhoaHoc: (data) => api.post('/giang-vien/khoa-hoc/tao-khoa-hoc', data),
-  updateKhoaHoc: (id, data) => api.put(`/giang-vien/khoa-hoc/${id}`, data),
+  updateKhoaHoc: (id, data) => api.put(`/giang-vien/khoa-hoc/sua-khoa-hoc/${id}`, data),
+  xoaKhoaHoc: (id) => api.delete(`/giang-vien/khoa-hoc/xoa-khoa-hoc/${id}`),
 
   // --- API BÀI HỌC (ĐÃ SỬA ĐỂ UPLOAD ĐƯỢC FILE) ---
   getBaiHoc: (idKhoaHoc) => api.get(`/giang-vien/bai-hoc/lay-danh-sach/${idKhoaHoc}`),

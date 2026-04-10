@@ -2,6 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { giangVienAPI } from '../services/giangVienAPI';
 import '../../admin/styles/classrooms.css';
 
+const parseGiaApi = (gia) => {
+  if (gia === null || gia === undefined || gia === '') return 0;
+  const n = Number(gia);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const parseGiaInput = (gia) => {
+  const so = String(gia ?? '').replace(/\D/g, '');
+  return so ? Number(so) : 0;
+};
+
+const formatGia = (gia) => parseGiaApi(gia).toLocaleString('vi-VN');
+
 export default function QuanLyKhoaHoc() {
   const [danhSach, setDanhSach] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,7 +64,7 @@ export default function QuanLyKhoaHoc() {
       tenKhoaHoc: kh.tenKhoaHoc,
       moTa: kh.moTa || '',
       danhMuc: kh.danhMuc || '',
-      gia: kh.gia || ''
+      gia: parseGiaApi(kh.gia) > 0 ? String(parseGiaApi(kh.gia)) : ''
     });
     setShowModal(true);
   };
@@ -75,11 +88,16 @@ export default function QuanLyKhoaHoc() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...formData,
+        gia: formData.gia === '' ? 0 : parseGiaInput(formData.gia)
+      };
+
       let response;
       if (isEditing) {
-        response = await giangVienAPI.updateKhoaHoc(currentId, formData);
+        response = await giangVienAPI.updateKhoaHoc(currentId, payload);
       } else {
-        response = await giangVienAPI.taoKhoaHoc(formData);
+        response = await giangVienAPI.taoKhoaHoc(payload);
       }
 
       if (response.data.success) {
@@ -138,7 +156,7 @@ export default function QuanLyKhoaHoc() {
                   <td className="cell-id">#{kh.idKhoaHoc}</td>
                   <td className="cell-name">{kh.tenKhoaHoc}</td>
                   <td><span className="student-badge">{kh.danhMuc || 'IT'}</span></td>
-                  <td className="cell-price">{Number(kh.gia).toLocaleString()}đ</td>
+                  <td className="cell-price">{parseGiaApi(kh.gia) === 0 ? 'Miễn phí' : `${formatGia(kh.gia)}đ`}</td>
                   <td className="cell-actions" style={{ textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                     <button className="btn btn-sm btn-edit" onClick={() => handleEditClick(kh)}>
                       Sửa
@@ -203,9 +221,12 @@ export default function QuanLyKhoaHoc() {
               <div className="form-group" style={{ marginBottom: '15px' }}>
                 <label>Giá tiền (đ)</label>
                 <input 
-                  type="number" className="form-input" 
-                  value={formData.gia} 
-                  onChange={(e) => setFormData({...formData, gia: e.target.value})} 
+                  type="text"
+                  inputMode="numeric"
+                  className="form-input"
+                  placeholder="Ví dụ: 100.000"
+                  value={formData.gia === '' ? '' : Number(formData.gia).toLocaleString('vi-VN')} 
+                  onChange={(e) => setFormData({...formData, gia: e.target.value.replace(/\D/g, '')})} 
                 />
               </div>
               <div className="form-group" style={{ marginBottom: '15px' }}>

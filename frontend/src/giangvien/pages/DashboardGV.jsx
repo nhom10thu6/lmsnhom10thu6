@@ -38,13 +38,13 @@ export default function DashboardGV() {
           let tongDoanhThu = 0;
 
           const chiTietDoanhThu = dsKhoaHoc.map(kh => {
-            const soHocVien = kh.dangky_khoahoc ? kh.dangky_khoahoc.length : 0;
+            const soHocVien = kh._count?.dangky_khoahoc ?? (kh.dangky_khoahoc ? kh.dangky_khoahoc.length : 0);
             const giaTien = Number(kh.gia) || 0;
             const doanhThuKhuaHoc = soHocVien * giaTien;
 
             tongHocVien += soHocVien;
             tongDoanhThu += doanhThuKhuaHoc;
-            if (kh.quizzes) tongQuiz += kh.quizzes.length;
+            tongQuiz += kh._count?.quizzes ?? (kh.quizzes ? kh.quizzes.length : 0);
 
             return {
               id: kh.idKhoaHoc,
@@ -123,7 +123,7 @@ export default function DashboardGV() {
                 <DollarSign size={22} color="#dc2626" />
               </div>
               <p style={{ fontSize: '32px', fontWeight: '800', color: '#dc2626', marginTop: '15px', marginBottom: 0 }}>
-                {stats.tongDoanhThu.toLocaleString()}đ
+                {stats.tongDoanhThu.toLocaleString('vi-VN')}đ
               </p>
             </div>
           </div>
@@ -153,9 +153,9 @@ export default function DashboardGV() {
                           {item.hocVien} HV
                         </span>
                       </td>
-                      <td style={{ textAlign: 'right', padding: '18px', color: '#334155', fontWeight: '600' }}>{item.gia.toLocaleString()}đ</td>
+                      <td style={{ textAlign: 'right', padding: '18px', color: '#334155', fontWeight: '600' }}>{item.gia.toLocaleString('vi-VN')}đ</td>
                       <td style={{ textAlign: 'right', padding: '18px', fontWeight: '800', color: '#0f172a', fontSize: '17px' }}>
-                        {item.doanhThu.toLocaleString()}đ
+                        {item.doanhThu.toLocaleString('vi-VN')}đ
                       </td>
                     </tr>
                   )) : (

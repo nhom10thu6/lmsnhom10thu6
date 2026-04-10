@@ -27,8 +27,19 @@ const giangVienKhoaHoc = require('./routes/giangvien/khoahoc');
 const hocvien = require('./routes/hocvien/hocvien');
 
 // --- MIDDLEWARE ---
+const allowedOrigins = [
+    'https://lmsnhom10thu6.onrender.com',
+    'https://nhom10thu6.netlify.app',
+];
+
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://lmsnhom10thu6.onrender.com','https://nhom10thu6.netlify.app'],
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (/^http:\/\/localhost:\d+$/.test(origin) || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
 }));
 app.use(express.json());

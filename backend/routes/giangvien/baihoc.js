@@ -334,15 +334,21 @@ router.get("/khoa-hoc-cua-toi", checkGiangVien, async (req, res) => {
     const idGiangVien = req.user.idNguoiDung;
     const danhSach = await prisma.khoahoc.findMany({
       where: { idGiangVien },
-      include: {
-        baihoc: {
-          orderBy: {
-            thuTu: "asc",
+      select: {
+        idKhoaHoc: true,
+        tenKhoaHoc: true,
+        moTa: true,
+        danhMuc: true,
+        gia: true,
+        ngayTao: true,
+        _count: {
+          select: {
+            quizzes: true,
+            dangky_khoahoc: true,
           },
         },
-        quizzes: true,
-        dangky_khoahoc: true // Đã giữ lại trường dangky_khoahoc của Liêm
       },
+      orderBy: { ngayTao: "desc" },
     });
 
     return res.json({
