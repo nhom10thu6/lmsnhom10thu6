@@ -50,22 +50,87 @@ function verifyWebhookSecret(req) {
 }
 
 function randomSuffix() {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const first = letters[Math.floor(Math.random() * letters.length)];
+  const rest = Math.random().toString(36).slice(2, 7).toUpperCase();
+  return `${first}${rest}`;
 }
 
 function buildTransferContent(userId, courseId) {
-  return `LMS-${userId}-${courseId}-${randomSuffix()}`;
+  // Tagged code remains parseable even if bank app strips separators.
+  return `LMSU${userId}C${courseId}R${randomSuffix()}`;
 }
 
 function parseTransferContent(contentRaw) {
   const content = String(contentRaw || '').toUpperCase();
-  const m = content.match(/LMS[\s_\-]?(\d+)[\s_\-]?(\d+)[\s_\-]?([A-Z0-9]{4,})/);
-  if (!m) return null;
-  return {
-    userId: toInt(m[1]),
-    courseId: toInt(m[2]),
-    ref: m[3],
-  };
+
+  // New tagged format: LMSU10C32RABC123 (with or without separators).
+  const tagged = content.match(/LMS[\s_\-]*U(\d+)[\s_\-]*C(\d+)[\s_\-]*R([A-Z0-9]{4,})/);
+  if (tagged) {
+    return {
+      userId: toInt(tagged[1]),
+      courseId: toInt(tagged[2]),
+      ref: tagged[3],
+      needsResolve: false,
+    };
+  }
+
+  // Legacy explicit format: LMS-10-32-ABC123.
+  const legacy = content.match(/LMS[\s_\-]+(\d+)[\s_\-]+(\d+)[\s_\-]+([A-Z0-9]{4,})/);
+  if (legacy) {
+    return {
+      userId: toInt(legacy[1]),
+      courseId: toInt(legacy[2]),
+      ref: legacy[3],
+      needsResolve: false,
+    };
+  }
+
+  // Legacy compact when separators are stripped by bank app: LMS1032ABC123.
+  const compact = content.match(/LMS(\d+)([A-Z][A-Z0-9]{3,})/);
+  if (compact) {
+    return {
+      userId: 0,
+      courseId: 0,
+      ref: compact[2],
+      compactDigits: compact[1],
+      needsResolve: true,
+    };
+  }
+
+  return null;
+}
+
+async function resolveLegacyCompact(compactDigits, amount) {
+  const digits = String(compactDigits || '').replace(/\D/g, '');
+  if (digits.length < 2) return null;
+
+  const matched = [];
+  for (let i = 1; i < digits.length; i += 1) {
+    const userId = toInt(digits.slice(0, i));
+    const courseId = toInt(digits.slice(i));
+    if (!userId || !courseId) continue;
+
+    const enrollment = await prisma.dangky_khoahoc.findUnique({
+      where: {
+        idNguoiDung_idKhoaHoc: {
+          idNguoiDung: userId,
+          idKhoaHoc: courseId,
+        },
+      },
+      include: { khoahoc: true },
+    });
+
+    if (!enrollment || enrollment.ngayThanhToan) continue;
+
+    const expected = Math.round(parsePrice(enrollment.khoahoc?.gia));
+    if (amount >= expected) {
+      matched.push({ userId, courseId, enrollment });
+    }
+  }
+
+  if (matched.length !== 1) return null;
+  return matched[0];
 }
 
 function getSepayConfig() {
@@ -232,15 +297,34 @@ router.post('/sepay/webhook', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Nội dung chuyển khoản không đúng định dạng.' });
     }
 
-    const enrollment = await prisma.dangky_khoahoc.findUnique({
-      where: {
-        idNguoiDung_idKhoaHoc: {
-          idNguoiDung: parsed.userId,
-          idKhoaHoc: parsed.courseId,
+    let resolvedUserId = parsed.userId;
+    let resolvedCourseId = parsed.courseId;
+    let enrollment = null;
+
+    if (parsed.needsResolve) {
+      const resolved = await resolveLegacyCompact(parsed.compactDigits, amount);
+      if (!resolved) {
+        return res.status(400).json({
+          success: false,
+          message: 'Không thể xác định đơn thanh toán từ nội dung chuyển khoản.',
+        });
+      }
+      resolvedUserId = resolved.userId;
+      resolvedCourseId = resolved.courseId;
+      enrollment = resolved.enrollment;
+    }
+
+    if (!enrollment) {
+      enrollment = await prisma.dangky_khoahoc.findUnique({
+        where: {
+          idNguoiDung_idKhoaHoc: {
+            idNguoiDung: resolvedUserId,
+            idKhoaHoc: resolvedCourseId,
+          },
         },
-      },
-      include: { khoahoc: true },
-    });
+        include: { khoahoc: true },
+      });
+    }
 
     if (!enrollment) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy đăng ký khóa học.' });
@@ -268,8 +352,8 @@ router.post('/sepay/webhook', async (req, res) => {
     return res.json({
       success: true,
       updated: true,
-      userId: parsed.userId,
-      idKhoaHoc: parsed.courseId,
+      userId: resolvedUserId,
+      idKhoaHoc: resolvedCourseId,
       soTienNhan: amount,
     });
   } catch (error) {
