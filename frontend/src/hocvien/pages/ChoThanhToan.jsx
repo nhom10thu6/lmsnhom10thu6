@@ -73,6 +73,9 @@ export default function ChoThanhToan() {
       }
 
       setStatusText('Đã nhận yêu cầu. Hệ thống đang chờ webhook SePay xác nhận giao dịch.');
+      if (showSuccessMessage) {
+        alert('Hệ thống chưa nhận webhook xác nhận. Vui lòng chờ 10-30 giây rồi bấm lại.');
+      }
       return false;
     } catch (err) {
       console.error(err);
