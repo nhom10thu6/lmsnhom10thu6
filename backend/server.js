@@ -25,6 +25,7 @@ const giangVienBaiHoc = require('./routes/giangvien/baihoc');
 const giangVienCert = require('./routes/giangvien/certificate');
 const giangVienKhoaHoc = require('./routes/giangvien/khoahoc');
 const hocvien = require('./routes/hocvien/hocvien');
+const thanhtoan = require('./routes/thanhtoan');
 
 // --- MIDDLEWARE ---
 const allowedOrigins = [
@@ -53,6 +54,7 @@ app.use('/giang-vien/bai-hoc', giangVienBaiHoc);
 app.use('/giang-vien/certificate', giangVienCert);
 app.use('/giang-vien/khoa-hoc', giangVienKhoaHoc);
 app.use('/api/hocvien', hocvien);
+app.use('/thanhtoan', thanhtoan);
 
 // Test server
 app.get('/', (req, res) => {

@@ -37,6 +37,13 @@ export const hocVienAPI = {
   getKhoaHocChoThanhToan: () =>
     axios.get(`${API_URL}/api/hocvien/khoahoc/cho-thanh-toan`, { headers: getHeaders() }),
 
+  taoThanhToanSePay: (idKhoaHoc) =>
+    axios.post(
+      `${API_URL}/thanhtoan/sepay/tao`,
+      { idKhoaHoc },
+      { headers: getHeaders() },
+    ),
+
   thanhToanKhoaHoc: (idKhoaHoc, payload = {}) =>
     axios.post(
       `${API_URL}/api/hocvien/khoahoc/thanh-toan`,

@@ -688,6 +688,59 @@
   box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
 }
 
+.hv-pay-qr-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.hv-pay-qr {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 8px;
+}
+
+.hv-pay-static-value {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  font-size: 14px;
+  color: #111827;
+  box-sizing: border-box;
+  word-break: break-word;
+}
+
+.hv-pay-inline-value {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  box-sizing: border-box;
+}
+
+.hv-pay-inline-value span {
+  flex: 1;
+  font-size: 14px;
+  color: #111827;
+  word-break: break-word;
+}
+
+.hv-pay-copy-btn {
+  min-width: 88px;
+  white-space: nowrap;
+  padding: 8px 10px;
+}
+
 .hv-pay-row2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -712,6 +765,10 @@
   justify-content: center;
 }
 
+.hv-pay-open-qr {
+  text-decoration: none;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .hv-stats-grid {
@@ -726,6 +783,19 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+
+  .hv-pay-inline-value {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hv-pay-copy-btn {
+    width: 100%;
+  }
+
+  .hv-pay-actions {
+    flex-direction: column;
   }
 
   .hv-quiz-header-bar {

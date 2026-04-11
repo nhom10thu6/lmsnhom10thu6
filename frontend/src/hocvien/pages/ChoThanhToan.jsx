@@ -3,31 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { hocVienAPI } from '../services/hocVienAPI';
 import '../styles/hocvien.css';
 
-const NGAN_HANG = [
-  { value: '', label: '— Chọn ngân hàng —' },
-  { value: 'Vietcombank', label: 'Vietcombank (VCB)' },
-  { value: 'Techcombank', label: 'Techcombank (TCB)' },
-  { value: 'BIDV', label: 'BIDV' },
-  { value: 'VietinBank', label: 'VietinBank' },
-  { value: 'Agribank', label: 'Agribank' },
-  { value: 'ACB', label: 'ACB' },
-  { value: 'MB Bank', label: 'MB Bank' },
-  { value: 'TPBank', label: 'TPBank' },
-  { value: 'Sacombank', label: 'Sacombank' },
-];
-
 export default function ChoThanhToan() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [paying, setPaying] = useState(false);
   const [modalKhoa, setModalKhoa] = useState(null);
+  const [creatingPayment, setCreatingPayment] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState(null);
+  const [statusText, setStatusText] = useState('');
+  const [copiedField, setCopiedField] = useState('');
 
-  const [bankTenNH, setBankTenNH] = useState('');
-  const [bankSoTK, setBankSoTK] = useState('');
-  const [bankChuTK, setBankChuTK] = useState('');
-
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const res = await hocVienAPI.getKhoaHocChoThanhToan();
       if (res.data.success) setItems(res.data.items || []);
@@ -36,58 +23,113 @@ export default function ChoThanhToan() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     load();
-  }, []);
-
-  const moModal = useCallback((row) => {
-    setModalKhoa(row);
-    setBankTenNH('');
-    setBankSoTK('');
-    setBankChuTK('');
-  }, []);
+  }, [load]);
 
   const dongModal = () => {
-    if (paying) return;
+    if (creatingPayment) return;
     setModalKhoa(null);
+    setPaymentInfo(null);
+    setStatusText('');
+    setCopiedField('');
   };
 
-  const guiThanhToan = async (e) => {
-    e.preventDefault();
-    if (!modalKhoa) return;
-
-    const payload = {
-      phuongThuc: 'bank',
-      tenNganHang: bankTenNH,
-      soTaiKhoan: bankSoTK.replace(/\D/g, ''),
-      tenChuTaiKhoan: bankChuTK.trim(),
-    };
-
-    setPaying(true);
+  const saoChep = async (field, text) => {
     try {
-      const res = await hocVienAPI.thanhToanKhoaHoc(modalKhoa.idKhoaHoc, payload);
-      if (res.data.success) {
-        alert(res.data.message || 'Thanh toán thành công!');
-        dongModal();
-        await load();
-      } else {
-        alert(res.data.message || 'Không thể thanh toán');
-      }
+      await navigator.clipboard.writeText(String(text || ''));
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(''), 1500);
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.error || 'Lỗi thanh toán');
-    } finally {
-      setPaying(false);
+      alert('Không thể sao chép. Hãy sao chép thủ công.');
     }
   };
+
+  const kiemTraDaThanhToan = useCallback(async (showSuccessMessage = false) => {
+    if (!modalKhoa) return false;
+
+    setCheckingStatus(true);
+    try {
+      const res = await hocVienAPI.getKhoaHocChoThanhToan();
+      const pending = Array.isArray(res.data?.items) ? res.data.items : [];
+      const conCho = pending.some((x) => Number(x.idKhoaHoc) === Number(modalKhoa.idKhoaHoc));
+
+      setItems(pending);
+
+      if (!conCho) {
+        if (showSuccessMessage) {
+          alert('Thanh toán đã được xác nhận. Khóa học đã kích hoạt!');
+        }
+        setModalKhoa(null);
+        setPaymentInfo(null);
+        setStatusText('');
+        setCopiedField('');
+        return true;
+      }
+
+      setStatusText('Đã nhận yêu cầu. Hệ thống đang chờ webhook SePay xác nhận giao dịch.');
+      return false;
+    } catch (err) {
+      console.error(err);
+      setStatusText('Không kiểm tra được trạng thái lúc này. Hệ thống sẽ tự thử lại.');
+      return false;
+    } finally {
+      setCheckingStatus(false);
+    }
+  }, [modalKhoa]);
+
+  useEffect(() => {
+    if (!modalKhoa || !paymentInfo || creatingPayment) return undefined;
+
+    const t = setInterval(() => {
+      kiemTraDaThanhToan(false);
+    }, 5000);
+
+    return () => clearInterval(t);
+  }, [modalKhoa, paymentInfo, creatingPayment, kiemTraDaThanhToan]);
+
+  const moModal = useCallback(async (row) => {
+    setModalKhoa(row);
+    setPaymentInfo(null);
+    setStatusText('Đang tạo yêu cầu thanh toán SePay...');
+    setCopiedField('');
+    setCreatingPayment(true);
+
+    try {
+      const res = await hocVienAPI.taoThanhToanSePay(row.idKhoaHoc);
+      if (res.data.success) {
+        if (res.data.paid) {
+          alert(res.data.message || 'Khóa học đã thanh toán trước đó.');
+          setModalKhoa(null);
+          setStatusText('');
+          await load();
+          return;
+        }
+
+        setPaymentInfo(res.data);
+        setStatusText('Vui lòng chuyển khoản đúng số tiền và đúng nội dung để hệ thống tự động kích hoạt.');
+      } else {
+        alert(res.data.message || 'Không thể tạo thanh toán SePay.');
+        setModalKhoa(null);
+        setStatusText('');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.response?.data?.error || 'Lỗi tạo thanh toán SePay.');
+      setModalKhoa(null);
+      setStatusText('');
+    } finally {
+      setCreatingPayment(false);
+    }
+  }, [load]);
 
   return (
     <div style={{ padding: '20px' }}>
       <div className="hv-page-header">
         <h1>Thanh toán khóa học</h1>
         <p style={{ margin: '8px 0 0', color: '#6b7280', fontSize: 14 }}>
-          Chuyển khoản qua ngân hàng (demo — không kết nối ngân hàng thật).
+          Quét QR SePay để chuyển khoản và kích hoạt tự động bằng webhook.
         </p>
       </div>
 
@@ -149,64 +191,94 @@ export default function ChoThanhToan() {
                 {Number(modalKhoa.gia).toLocaleString('vi-VN')}đ
               </div>
               <p style={{ margin: '10px 0 0', fontSize: 13, fontWeight: 600, color: '#374151' }}>
-                🏦 Chuyển khoản ngân hàng
+                💳 SePay - Chuyển khoản cá nhân
               </p>
             </div>
 
-            <form className="hv-pay-body" onSubmit={guiThanhToan}>
-              <div className="hv-pay-field">
-                <label htmlFor="hv-bank-name">Ngân hàng</label>
-                <select
-                  id="hv-bank-name"
-                  value={bankTenNH}
-                  onChange={(e) => setBankTenNH(e.target.value)}
-                  required
-                >
-                  {NGAN_HANG.map((b) => (
-                    <option key={b.value || 'empty'} value={b.value}>
-                      {b.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="hv-pay-field">
-                <label htmlFor="hv-bank-stk">Số tài khoản</label>
-                <input
-                  id="hv-bank-stk"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="VD: 0123456789"
-                  value={bankSoTK}
-                  onChange={(e) => setBankSoTK(e.target.value.replace(/\D/g, '').slice(0, 16))}
-                  required
-                />
-              </div>
-              <div className="hv-pay-field">
-                <label htmlFor="hv-bank-owner">Tên chủ tài khoản</label>
-                <input
-                  id="hv-bank-owner"
-                  type="text"
-                  autoComplete="name"
-                  placeholder="In hoa, không dấu (VD: NGUYEN VAN A)"
-                  value={bankChuTK}
-                  onChange={(e) => setBankChuTK(e.target.value)}
-                  required
-                />
-              </div>
-              <p className="hv-pay-hint">
-                Demo: hệ thống chỉ kiểm tra định dạng. Không trừ tiền và không lưu số tài khoản.
-              </p>
+            <div className="hv-pay-body">
+              {creatingPayment ? (
+                <p className="hv-pay-hint" style={{ fontSize: 13 }}>
+                  {statusText || 'Đang tạo yêu cầu thanh toán...'}
+                </p>
+              ) : paymentInfo ? (
+                <>
+                  <div className="hv-pay-qr-wrap">
+                    {paymentInfo.qrUrl ? (
+                      <img src={paymentInfo.qrUrl} alt="QR SePay" className="hv-pay-qr" />
+                    ) : (
+                      <p className="hv-pay-hint">Không tìm thấy ảnh QR. Vui lòng chuyển khoản thủ công theo thông tin bên dưới.</p>
+                    )}
+                  </div>
+
+                  <div className="hv-pay-field">
+                    <label>Ngân hàng</label>
+                    <div className="hv-pay-static-value">{paymentInfo.thongTinChuyenKhoan?.nganHang || '-'}</div>
+                  </div>
+
+                  <div className="hv-pay-field">
+                    <label>Số tài khoản</label>
+                    <div className="hv-pay-inline-value">
+                      <span>{paymentInfo.thongTinChuyenKhoan?.soTaiKhoan || '-'}</span>
+                      <button
+                        type="button"
+                        className="btn btn-secondary hv-pay-copy-btn"
+                        onClick={() => saoChep('stk', paymentInfo.thongTinChuyenKhoan?.soTaiKhoan)}
+                      >
+                        {copiedField === 'stk' ? 'Đã chép' : 'Sao chép'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="hv-pay-field">
+                    <label>Tên tài khoản</label>
+                    <div className="hv-pay-static-value">{paymentInfo.thongTinChuyenKhoan?.tenTaiKhoan || '-'}</div>
+                  </div>
+
+                  <div className="hv-pay-field">
+                    <label>Nội dung chuyển khoản</label>
+                    <div className="hv-pay-inline-value">
+                      <span>{paymentInfo.thongTinChuyenKhoan?.noiDung || '-'}</span>
+                      <button
+                        type="button"
+                        className="btn btn-secondary hv-pay-copy-btn"
+                        onClick={() => saoChep('nd', paymentInfo.thongTinChuyenKhoan?.noiDung)}
+                      >
+                        {copiedField === 'nd' ? 'Đã chép' : 'Sao chép'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="hv-pay-hint" style={{ marginTop: 10 }}>
+                    {statusText}
+                  </p>
+                </>
+              ) : (
+                <p className="hv-pay-hint" style={{ fontSize: 13 }}>
+                  Không thể tạo mã thanh toán. Vui lòng đóng và thử lại.
+                </p>
+              )}
 
               <div className="hv-pay-actions">
-                <button type="button" className="btn btn-secondary" onClick={dongModal} disabled={paying}>
+                <button type="button" className="btn btn-secondary" onClick={dongModal} disabled={creatingPayment}>
                   Hủy
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={paying}>
-                  {paying ? '⏳ Đang xử lý...' : 'Xác nhận thanh toán'}
+
+                {paymentInfo?.qrUrl ? (
+                  <a className="btn btn-secondary hv-pay-open-qr" href={paymentInfo.qrUrl} target="_blank" rel="noreferrer">
+                    Mở QR
+                  </a>
+                ) : null}
+
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={creatingPayment || checkingStatus || !paymentInfo}
+                  onClick={() => kiemTraDaThanhToan(true)}
+                >
+                  {checkingStatus ? 'Đang kiểm tra...' : 'Tôi đã chuyển khoản'}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
