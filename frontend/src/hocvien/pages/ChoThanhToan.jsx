@@ -13,6 +13,7 @@ export default function ChoThanhToan() {
   const [paymentInfo, setPaymentInfo] = useState(null);
   const [statusText, setStatusText] = useState('');
   const [copiedField, setCopiedField] = useState('');
+  const [qrSrc, setQrSrc] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -35,6 +36,7 @@ export default function ChoThanhToan() {
     setPaymentInfo(null);
     setStatusText('');
     setCopiedField('');
+    setQrSrc('');
   };
 
   const saoChep = async (field, text) => {
@@ -66,6 +68,7 @@ export default function ChoThanhToan() {
         setPaymentInfo(null);
         setStatusText('');
         setCopiedField('');
+        setQrSrc('');
         return true;
       }
 
@@ -95,6 +98,7 @@ export default function ChoThanhToan() {
     setPaymentInfo(null);
     setStatusText('Đang tạo yêu cầu thanh toán SePay...');
     setCopiedField('');
+    setQrSrc('');
     setCreatingPayment(true);
 
     try {
@@ -109,6 +113,7 @@ export default function ChoThanhToan() {
         }
 
         setPaymentInfo(res.data);
+        setQrSrc(res.data.qrUrl || '');
         setStatusText('Vui lòng chuyển khoản đúng số tiền và đúng nội dung để hệ thống tự động kích hoạt.');
       } else {
         alert(res.data.message || 'Không thể tạo thanh toán SePay.');
@@ -123,6 +128,18 @@ export default function ChoThanhToan() {
       setCreatingPayment(false);
     }
   }, [load]);
+
+  const onQrError = () => {
+    if (!paymentInfo) return;
+
+    if (paymentInfo.qrUrlFallback && qrSrc !== paymentInfo.qrUrlFallback) {
+      setQrSrc(paymentInfo.qrUrlFallback);
+      setStatusText('QR chính không tương thích ngân hàng, đã chuyển sang QR dự phòng.');
+      return;
+    }
+
+    setStatusText('Không hiển thị được QR. Vui lòng chuyển khoản thủ công theo thông tin tài khoản và nội dung bên dưới.');
+  };
 
   return (
     <div style={{ padding: '20px' }}>
@@ -203,8 +220,8 @@ export default function ChoThanhToan() {
               ) : paymentInfo ? (
                 <>
                   <div className="hv-pay-qr-wrap">
-                    {paymentInfo.qrUrl ? (
-                      <img src={paymentInfo.qrUrl} alt="QR SePay" className="hv-pay-qr" />
+                    {qrSrc ? (
+                      <img src={qrSrc} alt="QR SePay" className="hv-pay-qr" onError={onQrError} />
                     ) : (
                       <p className="hv-pay-hint">Không tìm thấy ảnh QR. Vui lòng chuyển khoản thủ công theo thông tin bên dưới.</p>
                     )}
@@ -263,8 +280,8 @@ export default function ChoThanhToan() {
                   Hủy
                 </button>
 
-                {paymentInfo?.qrUrl ? (
-                  <a className="btn btn-secondary hv-pay-open-qr" href={paymentInfo.qrUrl} target="_blank" rel="noreferrer">
+                {qrSrc ? (
+                  <a className="btn btn-secondary hv-pay-open-qr" href={qrSrc} target="_blank" rel="noreferrer">
                     Mở QR
                   </a>
                 ) : null}

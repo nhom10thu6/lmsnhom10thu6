@@ -59,7 +59,7 @@ function buildTransferContent(userId, courseId) {
 
 function parseTransferContent(contentRaw) {
   const content = String(contentRaw || '').toUpperCase();
-  const m = content.match(/LMS-(\d+)-(\d+)-([A-Z0-9]{4,})/);
+  const m = content.match(/LMS[\s_\-]?(\d+)[\s_\-]?(\d+)[\s_\-]?([A-Z0-9]{4,})/);
   if (!m) return null;
   return {
     userId: toInt(m[1]),
@@ -79,6 +79,49 @@ function getSepayConfig() {
     accountNo,
     accountName,
     qrBaseUrl,
+  };
+}
+
+function normalizeBankCodeForQr(rawCode) {
+  const code = String(rawCode || '').trim().toUpperCase();
+  if (!code) return '';
+
+  const map = {
+    TPBVVNVX: 'TPB',
+    VCBVVNVX: 'VCB',
+    BIDVVNVX: 'BIDV',
+    TCBVVNVX: 'TCB',
+    ICBVVNVX: 'CTG',
+    MBBEVNVX: 'MB',
+    ACBVVNVX: 'ACB',
+  };
+
+  if (map[code]) return map[code];
+  if (code.endsWith('VVNVX') && code.length > 5) {
+    return code.slice(0, -5);
+  }
+  return code;
+}
+
+function buildQrUrls(cfg, amount, transferContent) {
+  const roundedAmount = Math.round(amount);
+  const bankForQr = normalizeBankCodeForQr(cfg.bankCode);
+
+  const sepayQuery = new URLSearchParams({
+    acc: cfg.accountNo,
+    bank: cfg.bankCode,
+    amount: String(roundedAmount),
+    des: transferContent,
+    template: 'compact',
+  });
+
+  const sepayQrUrl = `${cfg.qrBaseUrl}?${sepayQuery.toString()}`;
+  const vietQrUrl = `https://img.vietqr.io/image/${encodeURIComponent(bankForQr)}-${encodeURIComponent(cfg.accountNo)}-compact2.png?amount=${encodeURIComponent(String(roundedAmount))}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(cfg.accountName)}`;
+
+  return {
+    bankForQr,
+    primaryQrUrl: vietQrUrl,
+    fallbackQrUrl: sepayQrUrl,
   };
 }
 
@@ -130,15 +173,7 @@ router.post('/sepay/tao', loadUser, async (req, res) => {
     }
 
     const transferContent = buildTransferContent(userId, idKhoaHoc);
-    const query = new URLSearchParams({
-      acc: cfg.accountNo,
-      bank: cfg.bankCode,
-      amount: String(Math.round(amount)),
-      des: transferContent,
-      template: 'compact',
-    });
-
-    const qrUrl = `${cfg.qrBaseUrl}?${query.toString()}`;
+    const qr = buildQrUrls(cfg, amount, transferContent);
 
     return res.json({
       success: true,
@@ -148,11 +183,13 @@ router.post('/sepay/tao', loadUser, async (req, res) => {
       soTien: Math.round(amount),
       thongTinChuyenKhoan: {
         nganHang: cfg.bankCode,
+        nganHangQr: qr.bankForQr,
         soTaiKhoan: cfg.accountNo,
         tenTaiKhoan: cfg.accountName,
         noiDung: transferContent,
       },
-      qrUrl,
+      qrUrl: qr.primaryQrUrl,
+      qrUrlFallback: qr.fallbackQrUrl,
       note: 'sau khi chuyển khoản, SePay webhook sẽ tự động kích hoạt khóa học.',
     });
   } catch (error) {
@@ -185,7 +222,11 @@ router.post('/sepay/webhook', async (req, res) => {
       || '';
 
     const amount = toAmount(payload.amount ?? payload.transferAmount ?? payload.money ?? payload.value);
-    const parsed = parseTransferContent(content);
+    const parsed =
+      parseTransferContent(content)
+      || parseTransferContent(payload.code)
+      || parseTransferContent(payload.paymentCode)
+      || parseTransferContent(payload.transferCode);
 
     if (!parsed) {
       return res.status(400).json({ success: false, message: 'Nội dung chuyển khoản không đúng định dạng.' });
