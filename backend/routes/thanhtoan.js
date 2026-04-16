@@ -61,6 +61,7 @@ function buildTransferContent(userId, courseId) {
   return `LMSU${userId}C${courseId}R${randomSuffix()}`;
 }
 
+//hàm tách nội dung chuyển khoản
 function parseTransferContent(contentRaw) {
   const content = String(contentRaw || '').toUpperCase();
 
