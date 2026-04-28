@@ -26,6 +26,7 @@ router.get("/", checkAdmin ,async (req, res) => {
                 idNguoiDung: true,
                 hoTen: true,
                 taiKhoan: true,
+                vaiTro: true,
                 _count:{
                     select:{
                         dangky_khoahoc: true
