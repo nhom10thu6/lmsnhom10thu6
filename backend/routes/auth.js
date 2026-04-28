@@ -50,8 +50,12 @@ router.post('/dangky', async (req, res) => {
     hoTen = hoTen ? String(hoTen).trim() : '';
     taiKhoan = taiKhoan ? String(taiKhoan).trim() : '';
     matKhau = matKhau ? String(matKhau) : '';
+    const nameRegex = /^[a-zA-ZÀ-ỹ\s]+$/
     if (!hoTen || !taiKhoan || !matKhau) {
       return res.status(400).json({ success: false, message: 'Thiếu thông tin bắt buộc.' });
+    }
+    if(!nameRegex.test(hoTen)){
+      return res.status(400).json({ success: false, message: 'Họ tên chỉ được chứa chữ cái và khoảng trắng.' });
     }
     const exists = await prisma.nguoidung.findUnique({ where: { taiKhoan } });
     if (exists) {

@@ -6,39 +6,38 @@ const {checkAdmin} = require('../middleware/middleware')
 
 router.get("/", checkAdmin ,async (req, res) => {
     try {
-        // const { role } = req.query;
-        // const where = {};
-        // if (role) {
-        //     where.vaiTro = role;
-        // }
-        // const dsNguoiDung = await prisma.nguoidung.findMany({
-        //     where,
-        //     include: {},
-        //     orderBy: {
-        //         idNguoiDung: 'asc'
-        //     }
-        // });
-        // res.json(dsNguoiDung);
-        
-        //lấy 3 học viên có tổng tiền đăng ký mua nhiều nhất
-        const ds = await prisma.nguoidung.findMany({
-            select:{
-                idNguoiDung: true,
-                hoTen: true,
-                taiKhoan: true,
-                vaiTro: true,
-                _count:{
-                    select:{
-                        dangky_khoahoc: true
-                    }
-                },
-            },
-            orderBy:{
+        const { role } = req.query;
+        const where = {};
+        if (role) {
+            where.vaiTro = role;
+        }
+        const dsNguoiDung = await prisma.nguoidung.findMany({
+            where,
+            include: {},
+            orderBy: {
                 idNguoiDung: 'asc'
-            },
-        })
+            }
+        });
+        res.json(dsNguoiDung);
+        
+    //     const ds = await prisma.nguoidung.findMany({
+    //         select:{
+    //             idNguoiDung: true,
+    //             hoTen: true,
+    //             taiKhoan: true,
+    //             vaiTro: true,
+    //             _count:{
+    //                 select:{
+    //                     dangky_khoahoc: true
+    //                 }
+    //             },
+    //         },
+    //         orderBy:{
+    //             idNguoiDung: 'asc'
+    //         },
+    //     })
 
-        res.json(ds)
+    //     res.json(ds)
     } catch (error) {
         console.error("Lỗi khi lấy thông tin người dùng:", error);
         res.status(500).json({ error: "Không thể lấy thông tin người dùng" });
@@ -65,27 +64,6 @@ router.get('/search', checkAdmin, async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
-
-router.get('/search', checkAdmin, async (req, res) => {
-  try {
-    const { taiKhoan } = req.query
-
-    const users = await prisma.nguoidung.findMany({
-      where: taiKhoan
-        ? {
-            taiKhoan: {
-              contains: taiKhoan,
-            },
-          }
-        : {},
-    })
-
-    res.json(users)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
 
 router.get("/:idNguoiDung", checkAdmin,async (req, res) => {
     try {
