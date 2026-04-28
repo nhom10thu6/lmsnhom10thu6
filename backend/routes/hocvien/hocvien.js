@@ -598,7 +598,8 @@ router.get('/quiz/:idQuiz', loadUser, async (req, res) => {
     const questions = quiz.quiz_questions.map((q) => ({
       idCauHoi: q.idCauHoi,
       cauHoi: q.cauHoi,
-      dapAn: buildDapAnObj(q),
+      loaiCauHoi: q.loaiCauHoi || 'tracnghiem',
+      dapAn: (q.loaiCauHoi || 'tracnghiem') === 'tuluan' ? {} : buildDapAnObj(q),
     }));
 
     return res.json({

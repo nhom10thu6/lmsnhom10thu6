@@ -69,10 +69,19 @@ export default function LamQuiz() {
     setAnswers(prev => ({ ...prev, [idCauHoi]: option }));
   };
 
+  const handleTextAnswer = (idCauHoi, value) => {
+    if (result) return;
+    setAnswers(prev => ({ ...prev, [idCauHoi]: value }));
+  };
+
   const handleSubmit = useCallback(async (autoSubmit = false) => {
     if (submitting) return;
     if (!autoSubmit) {
-      const unanswered = questions.filter(q => !answers[q.idCauHoi]);
+      const unanswered = questions.filter((q) => {
+        const ans = answers[q.idCauHoi];
+        if (typeof ans === 'string') return !ans.trim();
+        return ans === undefined || ans === null || ans === '';
+      });
       if (unanswered.length > 0) {
         const ok = window.confirm(`Bạn còn ${unanswered.length} câu chưa trả lời. Vẫn nộp bài?`);
         if (!ok) return;
@@ -223,21 +232,31 @@ export default function LamQuiz() {
               <p className="hv-question-title">
                 Câu {idx + 1}: {q.cauHoi}
               </p>
-              {Object.entries(q.dapAn).map(([key, value]) => (
-                <div
-                  key={key}
-                  className={`hv-answer-option ${answers[q.idCauHoi] === key ? 'selected' : ''}`}
-                  onClick={() => handleSelect(q.idCauHoi, key)}
-                >
-                  <span style={{
-                    width: 28, height: 28, borderRadius: '50%',
-                    background: answers[q.idCauHoi] === key ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 700, fontSize: 13, flexShrink: 0
-                  }}>{key}</span>
-                  <span>{value}</span>
-                </div>
-              ))}
+              {((q.loaiCauHoi || '').toLowerCase() === 'tuluan' || Object.keys(q.dapAn || {}).length === 0) ? (
+                <textarea
+                  className="hv-answer-textarea"
+                  placeholder="Nhập câu trả lời của bạn..."
+                  value={answers[q.idCauHoi] || ''}
+                  onChange={(e) => handleTextAnswer(q.idCauHoi, e.target.value)}
+                  rows={4}
+                />
+              ) : (
+                Object.entries(q.dapAn || {}).map(([key, value]) => (
+                  <div
+                    key={key}
+                    className={`hv-answer-option ${answers[q.idCauHoi] === key ? 'selected' : ''}`}
+                    onClick={() => handleSelect(q.idCauHoi, key)}
+                  >
+                    <span style={{
+                      width: 28, height: 28, borderRadius: '50%',
+                      background: answers[q.idCauHoi] === key ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 700, fontSize: 13, flexShrink: 0
+                    }}>{key}</span>
+                    <span>{value}</span>
+                  </div>
+                ))
+              )}
             </div>
           ))}
 

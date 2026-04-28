@@ -5,10 +5,108 @@ const prisma = new PrismaClient()
 const {checkGiangVien} = require('../middleware/middleware')
 const chuaKyTuNguyHiem = require('../../helper/helper.js').chuaKyTuNguyHiem
 
+const LOAI_CAU_HOI_HOP_LE = new Set(['tracnghiem', 'tuluan'])
+
+function layDanhSachCauHoiTuBody(body) {
+    if (body?.cauHoi !== undefined) return body.cauHoi
+    if (body?.questions !== undefined) return body.questions
+    return undefined
+}
+
+function chuanHoaCauHoi(rawCauHoi, { batBuocCoCauHoi = false } = {}) {
+    if (rawCauHoi === undefined) {
+        if (batBuocCoCauHoi) {
+            return { error: 'Bài kiểm tra phải có ít nhất 1 câu hỏi' }
+        }
+        return { questions: undefined }
+    }
+
+    if (!Array.isArray(rawCauHoi)) {
+        return { error: 'Câu hỏi phải là một mảng' }
+    }
+
+    if (batBuocCoCauHoi && rawCauHoi.length === 0) {
+        return { error: 'Bài kiểm tra phải có ít nhất 1 câu hỏi' }
+    }
+
+    if (rawCauHoi.length > 100) {
+        return {
+            error: `Bài kiểm tra chỉ được tối đa 100 câu hỏi (hiện tại: ${rawCauHoi.length} câu)`
+        }
+    }
+
+    const questions = []
+
+    for (let i = 0; i < rawCauHoi.length; i++) {
+        const ch = rawCauHoi[i] || {}
+        const stt = i + 1
+
+        const noiDungCauHoi = typeof ch.cauHoi === 'string' ? ch.cauHoi.trim() : ''
+        if (!noiDungCauHoi) {
+            return { error: `Câu hỏi thứ ${stt}: nội dung câu hỏi không được để trống` }
+        }
+
+        let diemCauHoi = 1.0
+        if (ch.diemCauHoi !== undefined && ch.diemCauHoi !== null && ch.diemCauHoi !== '') {
+            const diem = parseFloat(ch.diemCauHoi)
+            if (isNaN(diem) || diem <= 0) {
+                return { error: `Câu hỏi thứ ${stt}: điểm câu hỏi phải là số dương` }
+            }
+            diemCauHoi = diem
+        }
+
+        const loaiCauHoi = (typeof ch.loaiCauHoi === 'string' ? ch.loaiCauHoi : 'tracnghiem').trim().toLowerCase()
+        if (!LOAI_CAU_HOI_HOP_LE.has(loaiCauHoi)) {
+            return { error: `Câu hỏi thứ ${stt}: loại câu hỏi không hợp lệ` }
+        }
+
+        const question = {
+            cauHoi: noiDungCauHoi,
+            diemCauHoi,
+            loaiCauHoi,
+            dapAnDung: null,
+            dapAnA: null,
+            dapAnB: null,
+            dapAnC: null,
+            dapAnD: null
+        }
+
+        if (loaiCauHoi === 'tracnghiem') {
+            const dapAnA = typeof ch.dapAnA === 'string' ? ch.dapAnA.trim() : ''
+            const dapAnB = typeof ch.dapAnB === 'string' ? ch.dapAnB.trim() : ''
+            const dapAnC = typeof ch.dapAnC === 'string' ? ch.dapAnC.trim() : ''
+            const dapAnD = typeof ch.dapAnD === 'string' ? ch.dapAnD.trim() : ''
+
+            if (!dapAnA || !dapAnB || !dapAnC || !dapAnD) {
+                return { error: `Câu hỏi thứ ${stt}: trắc nghiệm phải có đủ đáp án A, B, C, D` }
+            }
+
+            const dapAnDung = typeof ch.dapAnDung === 'string' ? ch.dapAnDung.trim().toUpperCase() : ''
+            if (!['A', 'B', 'C', 'D'].includes(dapAnDung)) {
+                return { error: `Câu hỏi thứ ${stt}: đáp án đúng phải là A, B, C hoặc D` }
+            }
+
+            question.dapAnA = dapAnA
+            question.dapAnB = dapAnB
+            question.dapAnC = dapAnC
+            question.dapAnD = dapAnD
+            question.dapAnDung = dapAnDung
+        } else {
+            const goiYDapAn = typeof ch.dapAnDung === 'string' ? ch.dapAnDung.trim() : ''
+            question.dapAnDung = goiYDapAn || null
+        }
+
+        questions.push(question)
+    }
+
+    return { questions }
+}
+
 router.post("/tao-bai-kiem-tra", checkGiangVien, async (req, res) => {
     try{
         const idGiangVien = req.user.idNguoiDung;
-        const {idKhoaHoc, tenQuiz, thoiGianLamBai, cauHoi} = req.body;
+        const {idKhoaHoc, tenQuiz, thoiGianLamBai} = req.body;
+        const rawCauHoi = layDanhSachCauHoiTuBody(req.body)
 
         if(!idKhoaHoc || !tenQuiz){
             return res.status(400).json({
@@ -41,41 +139,12 @@ router.post("/tao-bai-kiem-tra", checkGiangVien, async (req, res) => {
             }
         }
 
-        if (cauHoi !== undefined) {
-            if (!Array.isArray(cauHoi)) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Câu hỏi phải là một mảng"
-                })
-            }
-
-            if (cauHoi.length > 100) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Bài kiểm tra chỉ được tối đa 100 câu hỏi (hiện tại: ${cauHoi.length} câu)`
-                })
-            }
-
-            for (let i = 0; i < cauHoi.length; i++) {
-                const ch = cauHoi[i]
-
-                if (!ch.cauHoi || typeof ch.cauHoi !== 'string' || ch.cauHoi.trim() === '') {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Câu hỏi thứ ${i + 1}: nội dung câu hỏi không được để trống`
-                    })
-                }
-
-                if (ch.diemCauHoi !== undefined) {
-                    const diem = parseFloat(ch.diemCauHoi)
-                    if (isNaN(diem) || diem <= 0) {
-                        return res.status(400).json({
-                            success: false,
-                            message: `Câu hỏi thứ ${i + 1}: điểm câu hỏi phải là số dương`
-                        })
-                    }
-                }
-            }
+        const parsedQuestions = chuanHoaCauHoi(rawCauHoi, { batBuocCoCauHoi: true })
+        if (parsedQuestions.error) {
+            return res.status(400).json({
+                success: false,
+                message: parsedQuestions.error
+            })
         }
 
         const khoahoc = await prisma.khoahoc.findFirst({
@@ -97,21 +166,9 @@ router.post("/tao-bai-kiem-tra", checkGiangVien, async (req, res) => {
             idKhoaHoc: parseInt(idKhoaHoc),
             tenQuiz: tenQuiz.trim(),
             thoiGianLamBai: thoiGianLamBai ? parseInt(thoiGianLamBai) : null,
-            quiz_questions: cauHoi && cauHoi.length > 0
-                ? {
-                    create: cauHoi.map(ch => ({
-                        cauHoi: ch.cauHoi.trim(),
-                        dapAnDung: ch.dapAnDung ?? null,
-                        diemCauHoi: ch.diemCauHoi ? parseFloat(ch.diemCauHoi) : 1.00,
-                        // --- LIÊM THÊM CÁC TRƯỜNG MỚI ĐỂ ĐỒNG BỘ ---
-                        loaiCauHoi: ch.loaiCauHoi || 'tracnghiem',
-                        dapAnA: ch.dapAnA || null,
-                        dapAnB: ch.dapAnB || null,
-                        dapAnC: ch.dapAnC || null,
-                        dapAnD: ch.dapAnD || null
-                    }))
-                }
-                : undefined
+            quiz_questions: {
+                create: parsedQuestions.questions
+            }
         },
         include: {
             quiz_questions: true
@@ -278,13 +335,14 @@ router.put("/sua-bai-kiem-tra/:idQuiz", checkGiangVien, async (req, res) => {
     try {
         const idGiangVien = req.user.idNguoiDung
         const { idQuiz } = req.params
-        const { tenQuiz, thoiGianLamBai, cauHoi } = req.body
+        const { tenQuiz, thoiGianLamBai } = req.body
+        const rawCauHoi = layDanhSachCauHoiTuBody(req.body)
 
         if (!idQuiz || isNaN(parseInt(idQuiz)) || parseInt(idQuiz) <= 0) {
             return res.status(400).json({ success: false, message: "id quiz không hợp lệ" })
         }
 
-        if (tenQuiz === undefined && thoiGianLamBai === undefined && cauHoi === undefined) {
+        if (tenQuiz === undefined && thoiGianLamBai === undefined && rawCauHoi === undefined) {
             return res.status(400).json({ success: false, message: "Vui lòng cung cấp ít nhất 1 thông tin cần cập nhật" })
         }
 
@@ -297,7 +355,7 @@ router.put("/sua-bai-kiem-tra/:idQuiz", checkGiangVien, async (req, res) => {
             return res.status(404).json({ success: false, message: "Bài kiểm tra không tồn tại hoặc bạn không có quyền sửa" })
         }
 
-        if (quiz.quiz_results.length > 0 && cauHoi !== undefined) {
+        if (quiz.quiz_results.length > 0 && rawCauHoi !== undefined) {
             return res.status(400).json({
                 success: false,
                 message: `Không thể sửa câu hỏi vì đã có ${quiz.quiz_results.length} học viên làm bài.`
@@ -309,20 +367,15 @@ router.put("/sua-bai-kiem-tra/:idQuiz", checkGiangVien, async (req, res) => {
         if (thoiGianLamBai !== undefined) {
             dataUpdate.thoiGianLamBai = thoiGianLamBai === null ? null : parseInt(thoiGianLamBai)
         }
-        if (cauHoi !== undefined) {
+        if (rawCauHoi !== undefined) {
+            const parsedQuestions = chuanHoaCauHoi(rawCauHoi, { batBuocCoCauHoi: true })
+            if (parsedQuestions.error) {
+                return res.status(400).json({ success: false, message: parsedQuestions.error })
+            }
+
             dataUpdate.quiz_questions = {
                 deleteMany: {},
-                create: cauHoi.map(ch => ({
-                    cauHoi: ch.cauHoi.trim(),
-                    dapAnDung: ch.dapAnDung?.trim() ?? null,
-                    diemCauHoi: ch.diemCauHoi ? parseFloat(ch.diemCauHoi) : 1.00,
-                    // --- THÊM CÁC TRƯỜNG ĐỂ ĐỒNG BỘ KHI SỬA ---
-                    loaiCauHoi: ch.loaiCauHoi || 'tracnghiem',
-                    dapAnA: ch.dapAnA || null,
-                    dapAnB: ch.dapAnB || null,
-                    dapAnC: ch.dapAnC || null,
-                    dapAnD: ch.dapAnD || null
-                }))
+                create: parsedQuestions.questions
             }
         }
 

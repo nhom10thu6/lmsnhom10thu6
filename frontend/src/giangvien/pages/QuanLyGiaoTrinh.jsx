@@ -211,7 +211,59 @@ export default function QuanLyGiaoTrinh() {
     e.preventDefault();
     try {
       const currentId = parseInt(khoaHocDuocChon);
-      const data = { ...quizData, idKhoaHoc: currentId };
+      const questions = (quizData?.questions || []).map((q) => ({
+        cauHoi: q.cauHoi,
+        loaiCauHoi: q.loaiCauHoi || "tracnghiem",
+        dapAnA: q.dapAnA,
+        dapAnB: q.dapAnB,
+        dapAnC: q.dapAnC,
+        dapAnD: q.dapAnD,
+        dapAnDung: q.dapAnDung,
+        diemCauHoi: q.diemCauHoi,
+      }));
+
+      if (questions.length === 0) {
+        alert("Bài kiểm tra phải có ít nhất 1 câu hỏi.");
+        return;
+      }
+
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        const stt = i + 1;
+
+        if (!q.cauHoi || !String(q.cauHoi).trim()) {
+          alert(`Câu hỏi thứ ${stt} đang để trống nội dung.`);
+          return;
+        }
+
+        if ((q.loaiCauHoi || "tracnghiem") === "tracnghiem") {
+          const du4DapAn =
+            String(q.dapAnA || "").trim() &&
+            String(q.dapAnB || "").trim() &&
+            String(q.dapAnC || "").trim() &&
+            String(q.dapAnD || "").trim();
+
+          if (!du4DapAn) {
+            alert(`Câu hỏi thứ ${stt} (trắc nghiệm) phải có đủ đáp án A, B, C, D.`);
+            return;
+          }
+
+          const dapAnDung = String(q.dapAnDung || "").trim().toUpperCase();
+          if (!["A", "B", "C", "D"].includes(dapAnDung)) {
+            alert(`Câu hỏi thứ ${stt}: đáp án đúng phải là A, B, C hoặc D.`);
+            return;
+          }
+
+          q.dapAnDung = dapAnDung;
+        }
+      }
+
+      const data = {
+        idKhoaHoc: currentId,
+        tenQuiz: quizData?.tenQuiz,
+        thoiGianLamBai: quizData?.thoiGianLamBai,
+        cauHoi: questions,
+      };
       const res = isEditing
         ? await giangVienAPI.suaQuiz(editingId, data)
         : await giangVienAPI.taoQuiz(data);
@@ -221,7 +273,7 @@ export default function QuanLyGiaoTrinh() {
         loadContent(currentId);
       }
     } catch (err) {
-      alert("Lỗi lưu Quiz!");
+      alert(err?.response?.data?.message || "Lỗi lưu Quiz!");
     }
   };
   const handleDeleteQuiz = async (id, ten) => {
@@ -669,20 +721,7 @@ export default function QuanLyGiaoTrinh() {
                     }}
                   >
                     <b>Câu hỏi #{index + 1}</b>
-                    <select
-                      value={q.loaiCauHoi}
-                      onChange={(e) =>
-                        handleQuestionChange(
-                          index,
-                          "loaiCauHoi",
-                          e.target.value,
-                        )
-                      }
-                      style={{ padding: "2px 8px" }}
-                    >
-                      <option value="tracnghiem">Trắc nghiệm</option>
-                      <option value="tuluan">Tự luận</option>
-                    </select>
+
                     <button
                       type="button"
                       onClick={() => removeQuestion(index)}
@@ -705,8 +744,7 @@ export default function QuanLyGiaoTrinh() {
                       handleQuestionChange(index, "cauHoi", e.target.value)
                     }
                   />
-
-                  {q.loaiCauHoi === "tracnghiem" ? (
+              
                     <div
                       style={{
                         marginTop: "10px",
@@ -762,22 +800,7 @@ export default function QuanLyGiaoTrinh() {
                         />
                       </div>
                     </div>
-                  ) : (
-                    <div style={{ marginTop: "10px" }}>
-                      <label>Gợi ý đáp án (Tự luận)</label>
-                      <textarea
-                        className="form-input"
-                        value={q.dapAnDung || ""}
-                        onChange={(e) =>
-                          handleQuestionChange(
-                            index,
-                            "dapAnDung",
-                            e.target.value,
-                          )
-                        }
-                      />
-                    </div>
-                  )}
+              
                   <div style={{ marginTop: "10px" }}>
                     <label>Điểm</label>
                     <input
