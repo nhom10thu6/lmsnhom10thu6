@@ -38,6 +38,33 @@ router.get("/search", checkAdmin, async (req, res) => {
         const { taiKhoan, tenKhoaHoc, tenGiangVien } = req.query;
         let whereCondition = {};
         
+        // const whereCondition = {
+        //     AND: [
+        //         taiKhoan && {
+        //             nguoidung: {
+        //                 taiKhoan: {
+        //                     contains: taiKhoan,
+        //                     mode: "insensitive"
+        //                 }
+        //             }
+        //         },
+        //         tenKhoaHoc && {
+        //             tenKhoaHoc: {
+        //                 contains: tenKhoaHoc,
+        //                 mode: "insensitive"
+        //             }
+        //         },
+        //         tenGiangVien && {
+        //             nguoidung: {
+        //                 hoTen: {
+        //                     contains: tenGiangVien,
+        //                     mode: "insensitive"
+        //                 }
+        //             }
+        //         }
+        //     ].filter(Boolean)
+        // };
+        //insensitive ko phan biet hoa thường
         if (taiKhoan) {
             whereCondition.nguoidung = {
                 taiKhoan: {
@@ -131,6 +158,18 @@ router.post("/", checkAdmin, async (req, res) => {
         if (!tenKhoaHoc || !moTa || !gia) {
             return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
         }
+        
+        const giangVien = await prisma.nguoidung.findUnique({
+            where: {
+                idNguoiDung: parseInt(idGiangVien) 
+            }
+        })
+        if(!giangVien||giangVien.vaiTro !== "giangvien"){
+            return res.status(400).json({
+                success: false,
+                message: "Giảng viên không hợp lệ"
+            });
+        }
         const khoaHocMoi = await prisma.khoahoc.create({
             data: {
                 tenKhoaHoc,
@@ -191,6 +230,17 @@ router.put("/:id", checkAdmin, async (req, res) => {
         tenKhoaHoc = tenKhoaHoc ? tenKhoaHoc.trim() : undefined
         moTa = moTa ? moTa.trim() : undefined
         danhMuc = danhMuc ? danhMuc.trim() : undefined
+        const giangVien = await prisma.nguoidung.findUnique({
+            where: {
+                idNguoiDung:  parseInt(idGiangVien)
+            }
+        })
+        if(!giangVien||giangVien.vaiTro !== "giangvien"){
+            return res.status(400).json({
+                success: false,
+                message: "Giảng viên không hợp lệ"
+            });
+        }
         const updateKhoaHoc = await prisma.khoahoc.update({
             where: { idKhoaHoc: khoaHocId },
             data: {

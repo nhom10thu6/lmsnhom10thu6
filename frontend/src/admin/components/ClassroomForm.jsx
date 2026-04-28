@@ -123,10 +123,13 @@ export default function ClassroomForm({ classroom, instructors, onClose, onSaveS
               className="form-input"
             >
               <option value="">-- Chọn giảng viên --</option>
-              {instructors.map((instructor) => (
-                <option key={instructor.idNguoiDung} value={instructor.idNguoiDung}>
-                  {instructor.hoTen}
-                </option>
+              {instructors.filter((u) => u.vaiTro === "giangvien").map((instructor) => (
+                  <option
+                    key={instructor.idNguoiDung}
+                    value={instructor.idNguoiDung}
+                  >
+                    {instructor.hoTen}
+                  </option>
               ))}
             </select>
           </div>

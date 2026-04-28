@@ -6,24 +6,44 @@ const {checkAdmin} = require('../middleware/middleware')
 
 router.get("/", checkAdmin ,async (req, res) => {
     try {
-        const { role } = req.query;
-        const where = {};
-        if (role) {
-            where.vaiTro = role;
-        }
-        const dsNguoiDung = await prisma.nguoidung.findMany({
-            where,
-            include: {},
-            orderBy: {
+        // const { role } = req.query;
+        // const where = {};
+        // if (role) {
+        //     where.vaiTro = role;
+        // }
+        // const dsNguoiDung = await prisma.nguoidung.findMany({
+        //     where,
+        //     include: {},
+        //     orderBy: {
+        //         idNguoiDung: 'asc'
+        //     }
+        // });
+        // res.json(dsNguoiDung);
+        
+        //lấy 3 học viên có tổng tiền đăng ký mua nhiều nhất
+        const ds = await prisma.nguoidung.findMany({
+            select:{
+                idNguoiDung: true,
+                hoTen: true,
+                taiKhoan: true,
+                _count:{
+                    select:{
+                        dangky_khoahoc: true
+                    }
+                },
+            },
+            orderBy:{
                 idNguoiDung: 'asc'
-            }
-        });
-        res.json(dsNguoiDung);
+            },
+        })
+
+        res.json(ds)
     } catch (error) {
         console.error("Lỗi khi lấy thông tin người dùng:", error);
         res.status(500).json({ error: "Không thể lấy thông tin người dùng" });
     }
 });
+
 
 router.get('/search', checkAdmin, async (req, res) => {
   try {
@@ -44,6 +64,27 @@ router.get('/search', checkAdmin, async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
+router.get('/search', checkAdmin, async (req, res) => {
+  try {
+    const { taiKhoan } = req.query
+
+    const users = await prisma.nguoidung.findMany({
+      where: taiKhoan
+        ? {
+            taiKhoan: {
+              contains: taiKhoan,
+            },
+          }
+        : {},
+    })
+
+    res.json(users)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 
 router.get("/:idNguoiDung", checkAdmin,async (req, res) => {
     try {
@@ -90,7 +131,8 @@ router.post("/", checkAdmin, async (req, res) => {
         });
 
         if (existing) {
-            return res.status(409).json({ error: "Tài khoản đã tồn tại" });
+            return res.status(409).json({ 
+                error: "Tài khoản đã tồn tại" });
         }
 
         const vaiTroMoi = ["admin", "giangvien", "hocvien"].includes(vaiTro)
@@ -130,11 +172,13 @@ router.delete("/:idNguoiDung", checkAdmin,async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: "Người dùng không tồn tại" });
         }
+        
         if (user.vaiTro === "giangvien") {
             return res.status(403).json({
                 error: "Không được xóa giảng viên"
             });
         }
+        
         if (user.vaiTro === "admin") {
             return res.status(403).json({
                 error: "Không được xóa admin"
